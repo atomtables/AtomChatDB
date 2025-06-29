@@ -1,0 +1,28 @@
+@font-face {
+    font-family: "SF Mono";
+    src: url("/fonts/SFmono/regular.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "SF Mono";
+    font-weight: bold;
+    src: url("/fonts/SFmono/bold.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "SF Mono";
+    font-weight: 500;
+    src: url("/fonts/SFmono/medium.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "SF Mono";
+    font-style: italic;
+    src: url("/fonts/SFmono/italic.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "SF Mono";
+    font-weight: 300;
+    src: url("/fonts/SFmono/light.otf") format("opentype");
+}
