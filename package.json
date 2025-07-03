@@ -8,6 +8,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
+		"db:start": "docker compose up -d",
 		"db:push": "drizzle-kit push",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio"
@@ -19,7 +20,6 @@
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.0.0",
-		"@types/better-sqlite3": "^7.6.12",
 		"@types/node": "^22",
 		"drizzle-kit": "^0.30.2",
 		"svelte": "^5.0.0",
@@ -30,14 +30,12 @@
 		"@node-rs/argon2": "^2.0.2",
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
-		"better-sqlite3": "^11.8.0",
-		"dotenv": "^17.0.0",
-		"drizzle-orm": "^0.40.0"
+		"drizzle-orm": "^0.40.0",
+		"postgres": "^3.4.5"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
 			"@tailwindcss/oxide",
-			"better-sqlite3",
 			"esbuild"
 		]
 	}

@@ -1,13 +1,35 @@
-@import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
 @import url("font.css");
+@import 'tailwindcss';
 
-@plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
 @layer base {
+    select {
+        -webkit-appearance: caret!important;
+    }
+
     html {
-        color-scheme: light dark;
+        color-scheme: only dark;
         font-family: "SF Mono", "Roboto Mono", monospace;
+    }
+
+    .x1 {
+        @apply border-0 border-b-2 border-neutral-500 p-2 ring-0
+    }
+
+    .wave-animation {
+        background-repeat: repeat-x;
+        background-size: contain;
+        animation: wave linear infinite;
+    }
+
+    @keyframes wave {
+        from {
+            background-position-x: 0;
+        }
+        to {
+            background-position-x: -100vw;
+        }
     }
 }

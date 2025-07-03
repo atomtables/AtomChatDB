@@ -1,5 +1,5 @@
 import * as auth from '$lib/server/auth';
-import { fail, redirect } from '@sveltejs/kit';
+import {error, fail, redirect} from '@sveltejs/kit';
 import { getRequestEvent } from '$app/server';
 import {requireLogin} from "$lib/authclient.js";
 
@@ -10,12 +10,18 @@ export const load = async () => {
 
 export const actions = {
     default: async (event) => {
+        const sessionToken = event.cookies.get(auth.sessionCookieName);
         if (!event.locals.session) {
-            return fail(401);
+            return error(401);
         }
-        await auth.invalidateSession(event.locals.session.id);
+        if (event.locals.session.id)
+        if (sessionToken.startsWith('guest_')) {
+            await auth.invalidateGuestSession(event.locals.session.id);
+        } else {
+            await auth.invalidateSession(event.locals.session.id);
+        }
         auth.deleteSessionTokenCookie(event);
 
-        return redirect(302, '/demo/lucia/login');
+        return redirect(302, '/');
     },
 };

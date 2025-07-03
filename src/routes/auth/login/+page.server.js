@@ -1,19 +1,22 @@
 import {fail, redirect} from "@sveltejs/kit";
 import {db} from "$lib/server/db/index.js";
-import * as table from "$lib/server/db/schema.js";
+import * as table from "$lib/server/db/schema.ts";
 import {eq} from "drizzle-orm";
 import {verify} from "@node-rs/argon2";
 import * as auth from "$lib/server/auth.js";
-import {validatePassword, validateUsername} from "$lib/authclient.js";
+import {validateIdentifier, validatePassword, validateUsername} from "$lib/authclient.js";
 
 export const actions = {
     default: async (event) => {
+        if (event.locals.user) return redirect(302, '/');
+
         const formData = await event.request.formData();
-        const username = formData.get('username');
+        const email = formData.get('email') === 'e-mail';
+        const username = formData.get('personalIdentifier');
         const password = formData.get('password');
 
-        if (!validateUsername(username)) {
-            return fail(400, { message: 'Invalid username (min 3, max 31 characters, alphanumeric only)' });
+        if (!validateIdentifier(username, email)) {
+            return fail(400, { message: `Invalid ${email ? 'e-mail' : 'phone number'}` });
         }
         if (!validatePassword(password)) {
             return fail(400, { message: 'Invalid password (min 6, max 255 characters)' });
@@ -22,11 +25,12 @@ export const actions = {
         const results = await db
             .select()
             .from(table.user)
-            .where(eq(table.user.username, username));
+            .where(eq(table.user.person, username));
 
-        const existingUser = results.at(0);
+        const existingUser = results?.[0];
         if (!existingUser) {
-            return fail(400, { message: 'Incorrect username or password' });
+            console.debug("wrong email")
+            return fail(400, { message: 'Invalid credentials' });
         }
 
         const validPassword = await verify(existingUser.passwordHash, password, {
@@ -36,13 +40,14 @@ export const actions = {
             parallelism: 1,
         });
         if (!validPassword) {
-            return fail(400, { message: 'Incorrect username or password' });
+            console.debug("wrong password")
+            return fail(400, { message: 'Invalid credentials' });
         }
 
         const sessionToken = auth.generateSessionToken();
         const session = await auth.createSession(sessionToken, existingUser.id);
         auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
 
-        return redirect(302, '/demo/lucia');
+        return redirect(302, '/');
     },
 }

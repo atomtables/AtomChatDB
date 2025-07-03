@@ -9,16 +9,26 @@ const handleAuth = async ({ event, resolve }) => {
 		return resolve(event);
 	}
 
-	const { session, user } = await auth.validateSessionToken(sessionToken);
+	let sessions, users;
+	if (sessionToken.startsWith("guest_")) {
+		let {session, user} = await auth.validateGuestSessionToken(sessionToken);
+		sessions = session
+		users = user
+	} else {
+		let {session, user} = await auth.validateSessionToken(sessionToken);
+		sessions = session
+		users = user
+	}
 
-	if (session) {
-		auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
+	if (sessions) {
+		auth.setSessionTokenCookie(event, sessionToken, sessions.expiresAt);
 	} else {
 		auth.deleteSessionTokenCookie(event);
 	}
 
-	event.locals.user = user;
-	event.locals.session = session;
+	users.isGuest = sessionToken.startsWith("guest_");
+	event.locals.user = users;
+	event.locals.session = sessions;
 	return resolve(event);
 };
 
