@@ -31,72 +31,33 @@ export const session = pgTable('sessions', {
 });
 
 // CREATE TABLE new_table (LIKE template_group INCLUDING ALL);
-export const template_group = pgTable("template_group", {
-	id: serial('id').primaryKey(),
+export const template_chatgroup = pgTable("template_chatgroup", {
+	id: text('id').primaryKey(),
 	content: varchar('content', { length: 1999 }).notNull(),
 	image: text('image64'), // an image file encoded base64
 	username: text('username').notNull(),
 	authorId: text('authorId'),
 	sentByGuest: boolean('sentByGuest').default(false).notNull(),
+	createdAt: timestamp('createdAt', { mode: 'date', withTimezone: true }).notNull().defaultNow()
 })
 
-export const domain = pgTable("domains", {
-	domain: text('domain').primaryKey(),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+export const template_newsgroup = pgTable("template_newsgroup", {
+	id: text('id').primaryKey(),
+	type: text('type').notNull(), // "post" or "reply"
+	title: text('title'), // the title of the post
+	content: varchar('content', { length: 1999 }).notNull(),
+	replyTo: text('replyTo').references(() => template_newsgroup.id), // the ID of the post this is replying to
+	image: text('image64'), // an image file encoded base64
+	username: text('username').notNull(),
+	authorId: text('authorId'),
+	sentByGuest: boolean('sentByGuest').default(false).notNull(),
+	createdAt: timestamp('createdAt', { mode: 'date', withTimezone: true }).notNull().defaultNow()
+})
+
+export const groups = pgTable('groups', {
+	address: text('address').primaryKey(),
 	createdBy: text('created_by').notNull().references(() => user.id),
-	description: text('description')
-})
-
-export const domainRelation = relations(domain, ({ many }) => ({
-	classes: many(class_)
-}))
-
-export const class_ = pgTable("classes", {
-	class: text('name').primaryKey(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-	createdBy: text('created_by').notNull().references(() => user.id),
-	description: text('description'),
-	domain: text('domain').notNull(),
+	description: text('description').notNull(),
+	type: text('type').notNull(), // "chat" or "news"
 })
-
-export const classRelation = relations(class_, ({ one, many }) => ({
-	domain: one(domain, {
-		fields: [class_.domain],
-		references: [domain.domain]
-	}),
-	focuses: many(focus)
-}))
-
-export const focus = pgTable("focus", {
-	focus: text('name').primaryKey(),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-	createdBy: text('created_by').notNull().references(() => user.id),
-	description: text('description'),
-	domain: text('domain').notNull().references(() => domain.domain),
-	class: text('class').notNull()
-})
-
-export const focusRelation = relations(focus, ({ one, many }) => ({
-	classes: one(class_, {
-		fields: [focus.class],
-		references: [class_.class]
-	}),
-	topics: many(topic)
-}))
-
-export const topic = pgTable("topics", {
-	topic: text('name').primaryKey(),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-	createdBy: text('created_by').notNull().references(() => user.id),
-	description: text('description'),
-	domain: text('domain').notNull().references(() => domain.domain),
-	class: text('class').notNull().references(() => class_.class),
-	focus: text('focus').notNull()
-})
-
-export const topicRelation = relations(topic, ({ one }) => ({
-	focus: one(focus, {
-		fields: [topic.focus],
-		references: [focus.focus]
-	})
-}))

@@ -15,7 +15,7 @@
     }
 
     .x1 {
-        @apply border-0 border-b-2 border-neutral-500 p-2 ring-0
+        @apply border-0 border-b-2 border-neutral-500 p-2 ring-0 text-center
     }
 
     .wave-animation {
@@ -31,5 +31,9 @@
         to {
             background-position-x: -100vw;
         }
+    }
+
+    hr {
+        @apply border-neutral-500 border-1 w-full my-2;
     }
 }
