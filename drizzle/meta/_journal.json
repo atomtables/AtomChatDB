@@ -15,6 +15,20 @@
       "when": 1751542702889,
       "tag": "0001_rainy_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1751693797188,
+      "tag": "0002_abandoned_jackpot",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1751780014993,
+      "tag": "0003_round_machine_man",
+      "breakpoints": true
     }
   ]
 }

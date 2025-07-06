@@ -1,13 +1,37 @@
 <script>
-    import Dialog from "$lib/Dialog.svelte";
     import { slide } from "svelte/transition";
-    import {boolean, text, timestamp, varchar} from "drizzle-orm/pg-core";
-    import {onMount} from "svelte";
+    import {enhance} from "$app/forms";
+    import DoubleButton from "$lib/DoubleButton.svelte";
+    import PostsList from "./PostsList.svelte";
+    import PostWriter from "./PostWriter.svelte";
+    import PostReader from "./PostReader.svelte";
+    import ReplyWriter from "./ReplyWriter.svelte";
 
-    let { data } = $props();
+    let { data, form } = $props();
 
     let drafts = $state([]);
     let currentlySelected = $state(null);
+    let posts = $state([]);
+    let isLoadingPosts = $state(true);
+
+    $effect(async () => {
+        if (data.data) {
+            isLoadingPosts = true;
+            try {
+                posts = await data.data;
+            } catch (error) {
+                console.error('Error loading posts:', error);
+            } finally {
+                isLoadingPosts = false;
+            }
+        }
+    });
+
+    $effect(() => {
+        if (!posts.find(p => p.id === currentlySelected) && !drafts.find(d => d.id === currentlySelected)) {
+            currentlySelected = null;
+        }
+    })
 
     const createDraft = () => {
         const newDraft = {
@@ -23,16 +47,65 @@
         currentlySelected = newDraft.id;
     }
 
+    const getPosts = () => {
+        isLoadingPosts = true;
+        fetch(
+            `/${data.address.address}/news/post`,
+            { method: 'GET' }
+        )
+            .then(response => response.json())
+            .then(data => {
+                posts = data.posts || [];
+                isLoadingPosts = false;
+            })
+            .catch(error => {
+                console.error('Error fetching posts:', error);
+                isLoadingPosts = false;
+            }
+        )
+    }
+
+    const deletePost = post => {
+        currentlySelected = null;
+        isLoadingPosts = true;
+        fetch(
+            `/${data.address.address}/news/post?id=${post.id}`,
+            { method: 'DELETE' }
+        )
+            .then(() => getPosts())
+            .catch(error => {
+                console.error('Error deleting post:', error);
+                isLoadingPosts = false;
+            })
+    }
+
+    const loadReplies = post => {
+        isLoadingPosts = true;
+        fetch(
+            `/${data.address.address}/news/replies?id=${posts[post].id}`,
+            { method: 'GET' }
+        )
+            .then(response => response.json())
+            .then(data => {
+                posts[post].replies = data.replies || [];
+                isLoadingPosts = false;
+            })
+            .catch(error => {
+                console.error('Error loading replies:', error);
+                isLoadingPosts = false;
+            }
+        )
+    }
+
     function exitIfDraft(event) {
-        if (drafts.length > 0) event.preventDefault();
-        event.returnValue = drafts.length > 0 ? "true" : null;
-        return drafts.length > 0 ? "true" : null;
+        if (drafts.length > 0) event.preventDefault()
+        return drafts.length > 0;
     }
 </script>
 
-<svelte:window on:beforeunload={exitIfDraft}></svelte:window>
+<svelte:window onbeforeunload={exitIfDraft}></svelte:window>
 
-{@debug drafts}
+{@debug drafts, posts, currentlySelected, isLoadingPosts}
 
 <div >
     <div class="absolute inset-0 -z-50 bg-[#242424]">
@@ -55,56 +128,114 @@
             </div>
         </div>
         <div class="w-11/12 mx-auto rounded-t-[75px] min-h-[calc(100vh-80px)] h-[calc(100vh-80px)] bg-neutral-500/10 backdrop-blur-md" transition:slide>
-            {#await data.data}
-                loading...
-            {:then posts}
-                <div class="pt-5 flex flex-col h-full">
-                    <div class="pt-1 pb-2 mx-[200px] flex flex-row justify-between">
-                        <div>
-                            {posts.length} items
+            <div class="pt-5 flex flex-col h-full">
+                <div class="pt-2 pb-2 mx-[200px] flex flex-row justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span>{posts.length} items</span>
+                        {#if isLoadingPosts}
+                            <span class="text-sm text-neutral-400 animate-pulse">updating...</span>
+                        {/if}
+                    </div>
+                    <div class="flex flex-row space-x-2">
+                        <button class="font-bold underline cursor-pointer" onclick={() => createDraft()}>create post</button>
+                        <a href="/" class="font-bold underline cursor-pointer">disconnect</a>
+                    </div>
+                </div>
+                <hr class="w-full mx-auto">
+                <!-- actual menus -->
+                {#if posts.length === 0 && drafts.length === 0 && isLoadingPosts}
+                    Loading...
+                {:else}
+                    <div class="mx-2 flex flex-row inset-0 h-[calc(100%-58px)]">
+                        <!-- list -->
+                        <div class="h-full border-r-2 border-neutral-500 inset-0 w-1/3 pr-2">
+                            {#if posts.length > 0 || drafts.length > 0}
+                                <PostsList {drafts} {posts} {loadReplies} bind:currentlySelected={currentlySelected} />
+                            {:else}
+                                {@render cutecat()}
+                            {/if}
                         </div>
-                        <div class="flex flex-row space-x-2">
-                            <button class="font-bold underline cursor-pointer" onclick={() => createDraft()}>create post</button>
-                            <a href="/" class="font-bold underline cursor-pointer">disconnect</a>
+                        <!-- reader -->
+                        <div class="h-full w-2/3 pl-2 overflow-y-scroll">
+                            {#if currentlySelected}
+                                <!-- draft editor form -->
+                                {#if currentlySelected.startsWith('draft')}
+                                    <PostWriter
+                                        bind:draft={drafts[drafts.indexOf(drafts.find(d => d.id === currentlySelected))]}
+                                        bind:currentlySelected={currentlySelected}
+                                        discard={draft => { drafts = drafts.filter(v => v.id !== draft.id); currentlySelected = null; }}
+                                        address={data.address.address}
+                                        bind:isLoadingPosts={isLoadingPosts}
+                                        {getPosts}
+                                    />
+                                {:else}
+                                    <!-- post reader crap -->
+                                    {@const post = posts.find(p => p.id === currentlySelected)}
+                                    <div class="h-full overflow-y-scroll flex flex-col space-y-2">
+                                        <PostReader {post} address={data.address.address} />
+                                        {#each post.replies as reply, ind (reply.id)}
+                                            {#if reply.id.startsWith("draft")}
+                                                <ReplyWriter
+                                                        discard={draft => post.replies = post.replies.filter(v => v.id !== draft.id)}
+                                                        bind:draft={post.replies[ind]}
+                                                        address={data.address.address}
+                                                        submit={async () => {
+                                                            await new Promise(
+                                                                resolve => {
+                                                                    let self = setInterval(() => {
+                                                                        if (!isLoadingPosts) resolve()
+                                                                    }, 50)
+                                                                }
+                                                            )
+                                                            loadReplies(ind)
+                                                        }}
+                                                        {form}
+                                                />
+                                            {:else}
+                                                <PostReader post={reply} address={data.address.address} />
+                                            {/if}
+                                        {/each}
+                                        <div class="flex flex-row self-end">
+                                            <button onclick={() => { currentlySelected = null; }} class="mb-2 p-2 cursor-pointer hover:bg-neutral-500/50 active:bg-neutral-600/50 shrink">back</button>
+                                            <button
+                                                    onclick={() => {
+                                                    post.replies.push({
+                                                        id: "draft_" + crypto.randomUUID(),
+                                                        type: "reply",
+                                                        title: "RE: " + post.title,
+                                                        replyTo: post.id,
+                                                        content: "This is a new reply. Edit me!",
+                                                        username: data.user.username,
+                                                        image: null,
+                                                        authorId: data.user.id,
+                                                        sentByGuest: data.user.isGuest,
+                                                        createdAt: new Date(),
+                                                    });
+                                                }}
+                                                    class="mb-2 p-2 cursor-pointer border-2 border-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50">reply</button>
+                                            {#if post.authorId === data.user.id && !data.user.isGuest}
+                                                <DoubleButton
+                                                        class="mb-2 p-2 cursor-pointer text-red-500 hover:bg-neutral-500/50 active:bg-neutral-600/50 shrink-0"
+                                                        onclick={() => deletePost(post)}
+                                                >delete</DoubleButton>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                {/if}
+                            {:else}
+                                nothing selected...
+                            {/if}
                         </div>
                     </div>
-                    <hr class="w-full mx-auto">
-                    <!-- actual menus -->
-                    <div class="mx-2 flex flex-row inset-0 h-full">
-                        <!-- list -->
-                        <div class="h-full border-r-2 border-neutral-500 inset-0 w-1/2 pr-2">
-                            {#if posts.length > 0 || drafts.length > 0}
-                                {#each drafts as draft (draft.id)}
-                                    <button class="flex flex-row items-center space-x-2 hover:bg-neutral-500/20 p-2 rounded-md cursor-pointer w-full"
-                                         onclick={() => {
-                                             currentlySelected = draft.id;
-                                         }}>
-                                        <span class="w-10 h-10 bg-neutral-500/20 rounded-full flex shrink-0 items-center justify-center">
-                                            <span class="text-lg font-bold">{draft.title[0]}</span>
-                                        </span>
-                                        <span class="flex flex-col items-start grow-0">
-                                            <span class="font-bold">{draft.title}</span>
-                                            <span class="text-sm text-neutral-400 overflow-ellipsis line-clamp-1 ">{draft.content.slice(0, 75)}...</span>
-                                        </span>
-                                    </button>
-                                {/each}
-                                {#each posts as post (post.id)}
-                                    <button class="flex flex-row items-center space-x-2 hover:bg-neutral-500/20 p-2 rounded-md cursor-pointer w-full"
-                                         onclick={() => {
-                                             currentlySelected = post.id;
-                                         }}>
-                                        <span class="w-10 h-10 bg-neutral-500/20 rounded-full flex shrink-0 items-center justify-center">
-                                            <span class="text-lg font-bold">{post.title[0]}</span>
-                                        </span>
-                                        <span class="flex flex-col items-start grow-0">
-                                            <span class="font-bold">{post.title}</span>
-                                            <span class="text-sm text-neutral-400 overflow-ellipsis line-clamp-1 ">{post.content.slice(0, 75)}...</span>
-                                        </span>
-                                    </button>
-                                {/each}
-                            {:else}
-                                <div class="flex flex-row items-center space-x-5">
-                                    <pre>
+                {/if}
+            </div>
+        </div>
+    </main>
+</div>
+
+{#snippet cutecat()}
+    <div class="flex flex-row items-center space-x-5">
+        <pre>
 
 
 ⠀⠀⡾⠻⢶⠶⣤⣄⠀⠀⠀⢀⣀⣀⡀⠀⠀⣀⣀⣀⣤⣤⣤⠤⠤⣤⣤⣤⠄⠀
@@ -136,85 +267,10 @@
 ⠀⠀⠀⠀⣿⣀⡆⠀⠀⠀⠀⢀⡟⠀⠀⠀⠸⣆⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠈⠙⣧⣀⣾⣤⡤⠞⠁⠀⠀⠀⠀⠙⣦⣄⣰⣧⣬⣿⠟⠀⠀⠀⠀⠀
                             </pre>
-                                    <div>
-                                        <h1 class="text-xl font-bold">no posts...</h1>
-                                        <div>why don't you get something started?</div>
-                                        <div>create a post (button on the top right)</div>
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
-                        <!-- reader -->
-                        <div class="h-full w-1/2 pl-2">
-                            {#if currentlySelected}
-                                <!-- draft editor form -->
-                                {#if currentlySelected.startsWith('draft')}
-                                    {@const draft = drafts.find(d => d.id === currentlySelected)}
-                                    <form method="POST" action="?/createPost" enctype="multipart/form-data" class="h-full flex flex-col">
-                                        <div class="w-full px-2 py-2 border-b-2 border-neutral-500">
-                                            To: <b>{data.address.address}</b>
-                                        </div>
-                                        <div class="flex flex-row space-x-2 w-full px-2 py-2 border-b-2 border-neutral-500">
-                                            <label for="title">Title: </label>
-                                            <input
-                                                id="title"
-                                                name="title"
-                                                type="text"
-                                                required
-                                                placeholder="subject"
-                                                bind:value={draft.title}
-                                                class="border-b-1 border-neutral-500 w-full field-sizing-[normal]"
-                                            >
-                                        </div>
-                                        <div class="flex flex-row space-x-2 w-full px-2 py-2 border-b-2 border-neutral-500">
-                                            <label for="title">Image (optional): </label>
-                                            <input type="file" name="image" accept="image/*" class="file:bg-neutral-500 file:cursor-pointer file:px-1" />
-                                        </div>
-                                        <div class="flex flex-col w-full h-full px-2 py-2">
-                                            <textarea
-                                                id="content"
-                                                required
-                                                name="content"
-                                                placeholder="write your post here..."
-                                                bind:value={draft.content}
-                                                class="h-full border-b-1 border-neutral-500 w-full resize-none"
-                                            ></textarea>
-                                        </div>
-                                        <div class="flex flex-row">
-                                            <button onclick={() => { drafts = drafts.filter(v => v.id !== draft.id); currentlySelected = null; }} class="mb-2 p-2 cursor-pointer hover:bg-neutral-500/50 active:bg-neutral-600/50 shrink">delete</button>
-                                            <button class="mb-2 p-2 cursor-pointer border-2 border-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50 grow">submit</button>
-                                        </div>
-                                    </form>
-                                {:else}
-                                <!-- post reader crap -->
-                                    {@const post = posts.find(p => p.id === currentlySelected)}
-                                    <div class="h-full flex flex-col">
-                                        <div class="w-full px-2 py-2 border-b-2 border-neutral-500">
-                                            To: <b>{data.address.address}</b>
-                                        </div>
-                                        <div class="flex flex-row space-x-2 w-full px-2 py-2 border-b-2 border-neutral-500">
-                                            <span class="font-bold">{post.title}</span>
-                                            <span class="text-sm text-neutral-400">by {post.username} on {post.createdAt.toLocaleDateString()}</span>
-                                        </div>
-                                        <div class="flex flex-col w-full h-full px-2 py-2">
-                                            <p class="whitespace pre-wrap break-words">{post.content}</p>
-                                            {#if post.image}
-                                                <img src={post.image} alt="Post image" class="max-w-full max-h-96 object-contain mt-2" />
-                                            {/if}
-                                        </div>
-                                        <div class="flex flex-row">
-                                            <button onclick={() => { currentlySelected = null; }} class="mb-2 p-2 cursor-pointer hover:bg-neutral-500/50 active:bg-neutral-600/50 shrink">back</button>
-                                            <button class="mb-2 p-2 cursor-pointer border-2 border-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50 grow">reply</button>
-                                        </div>
-                                    </div>
-                                {/if}
-                            {:else}
-                                nothing selected...
-                            {/if}
-                        </div>
-                    </div>
-                </div>
-            {/await}
+        <div>
+            <h1 class="text-xl font-bold">no posts...</h1>
+            <div>why don't you get something started?</div>
+            <div>create a post (button on the top right)</div>
         </div>
-    </main>
-</div>
+    </div>
+{/snippet}

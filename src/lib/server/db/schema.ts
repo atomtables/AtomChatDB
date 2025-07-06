@@ -41,12 +41,13 @@ export const template_chatgroup = pgTable("template_chatgroup", {
 	createdAt: timestamp('createdAt', { mode: 'date', withTimezone: true }).notNull().defaultNow()
 })
 
+// requires additional statement to add the fk
 export const template_newsgroup = pgTable("template_newsgroup", {
 	id: text('id').primaryKey(),
 	type: text('type').notNull(), // "post" or "reply"
 	title: text('title'), // the title of the post
 	content: varchar('content', { length: 1999 }).notNull(),
-	replyTo: text('replyTo').references(() => template_newsgroup.id), // the ID of the post this is replying to
+	replyTo: text('replyTo').references(() => template_newsgroup.id, { onDelete: "cascade", onUpdate: "cascade" }), // the ID of the post this is replying to
 	image: text('image64'), // an image file encoded base64
 	username: text('username').notNull(),
 	authorId: text('authorId'),
