@@ -8,7 +8,8 @@
         currentlySelected = $bindable(),
         address,
         isLoadingPosts = $bindable(),
-        getPosts
+        getPosts,
+        form
     } = $props();
 </script>
 
@@ -57,6 +58,13 @@
                 class="h-full border-b-1 border-neutral-500 w-full resize-none"
         ></textarea>
     </div>
+    <div class="text-red-500">
+        {#if form?.message}
+            <div class="text-red-500 text-center pt-2 inline">
+                {form.message}
+            </div>
+        {/if}
+    </div>
     <div class="flex flex-row">
         <button onclick={() => discard(draft)}
                 class="mb-2 p-2 cursor-pointer hover:bg-neutral-500/50 active:bg-neutral-600/50 shrink">
@@ -69,4 +77,5 @@
             submit
         </button>
     </div>
+
 </form>

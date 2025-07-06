@@ -65,6 +65,8 @@
         )
     }
 
+    setInterval(() => getPosts(), 30000)
+
     const deletePost = post => {
         currentlySelected = null;
         isLoadingPosts = true;
@@ -78,16 +80,18 @@
                 isLoadingPosts = false;
             })
     }
-
     const loadReplies = post => {
         isLoadingPosts = true;
+        let ind = posts.findIndex(p => p.id === currentlySelected);
         fetch(
-            `/${data.address.address}/news/replies?id=${posts[post].id}`,
+            `/${data.address.address}/news/replies?id=${posts[ind]?.id}`,
             { method: 'GET' }
         )
             .then(response => response.json())
             .then(data => {
-                posts[post].replies = data.replies || [];
+                let test = data.replies.length;
+                console.log(posts, post, posts.at(ind), data.replies, ind)
+                posts[ind].replies = data.replies || [];
                 isLoadingPosts = false;
             })
             .catch(error => {
@@ -148,7 +152,7 @@
                 {:else}
                     <div class="mx-2 flex flex-row inset-0 h-[calc(100%-58px)]">
                         <!-- list -->
-                        <div class="h-full border-r-2 border-neutral-500 inset-0 w-1/3 pr-2">
+                        <div class="h-full border-r-2 border-neutral-500 inset-0 w-1/2 xl:w-2/5 pr-2">
                             {#if posts.length > 0 || drafts.length > 0}
                                 <PostsList {drafts} {posts} {loadReplies} bind:currentlySelected={currentlySelected} />
                             {:else}
@@ -156,7 +160,7 @@
                             {/if}
                         </div>
                         <!-- reader -->
-                        <div class="h-full w-2/3 pl-2 overflow-y-scroll">
+                        <div class="h-full w-1/2 xl:w-3/5 pl-2 overflow-y-scroll">
                             {#if currentlySelected}
                                 <!-- draft editor form -->
                                 {#if currentlySelected.startsWith('draft')}
@@ -167,32 +171,32 @@
                                         address={data.address.address}
                                         bind:isLoadingPosts={isLoadingPosts}
                                         {getPosts}
+                                        form={form}
                                     />
+
                                 {:else}
                                     <!-- post reader crap -->
                                     {@const post = posts.find(p => p.id === currentlySelected)}
                                     <div class="h-full overflow-y-scroll flex flex-col space-y-2">
-                                        <PostReader {post} address={data.address.address} />
+                                        <PostReader {deletePost} {post} address={data.address.address} user={data.user} />
                                         {#each post.replies as reply, ind (reply.id)}
                                             {#if reply.id.startsWith("draft")}
                                                 <ReplyWriter
                                                         discard={draft => post.replies = post.replies.filter(v => v.id !== draft.id)}
                                                         bind:draft={post.replies[ind]}
                                                         address={data.address.address}
-                                                        submit={async () => {
-                                                            await new Promise(
+                                                        submit={() => { loadReplies(post) }}
+                                                        {form}
+                                                        isLoadingData={() => new Promise(
                                                                 resolve => {
-                                                                    let self = setInterval(() => {
+                                                                    setInterval(() => {
                                                                         if (!isLoadingPosts) resolve()
                                                                     }, 50)
                                                                 }
-                                                            )
-                                                            loadReplies(ind)
-                                                        }}
-                                                        {form}
+                                                            )}
                                                 />
                                             {:else}
-                                                <PostReader post={reply} address={data.address.address} />
+                                                <PostReader {deletePost} post={reply} address={data.address.address} user={data.user} />
                                             {/if}
                                         {/each}
                                         <div class="flex flex-row self-end">
@@ -213,12 +217,6 @@
                                                     });
                                                 }}
                                                     class="mb-2 p-2 cursor-pointer border-2 border-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50">reply</button>
-                                            {#if post.authorId === data.user.id && !data.user.isGuest}
-                                                <DoubleButton
-                                                        class="mb-2 p-2 cursor-pointer text-red-500 hover:bg-neutral-500/50 active:bg-neutral-600/50 shrink-0"
-                                                        onclick={() => deletePost(post)}
-                                                >delete</DoubleButton>
-                                            {/if}
                                         </div>
                                     </div>
                                 {/if}

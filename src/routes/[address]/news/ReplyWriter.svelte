@@ -2,7 +2,7 @@
     import {onMount} from "svelte";
     import {enhance} from "$app/forms";
 
-    let { form, draft = $bindable(), address, discard, currentlySelected = $bindable(), submit } = $props();
+    let { form, draft = $bindable(), address, discard, currentlySelected = $bindable(), submit, isLoadingData } = $props();
 
     let textarea;
     onMount(() => {
@@ -60,7 +60,10 @@
         <button
                 class="mb-2 p-2 cursor-pointer border-2 border-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50 grow"
                 type="submit"
-                onclick={() => {if (!form?.message) submit()}}
+                onclick={async () => {
+                    await isLoadingData();
+                    if (!(form?.message)) submit()
+                }}
         >
             submit
         </button>

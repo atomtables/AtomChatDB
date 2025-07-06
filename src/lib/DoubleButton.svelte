@@ -1,8 +1,8 @@
 <script>
     let {
         onclick,
-        class: class_,
-        children
+        children,
+        ...etc
     } = $props();
 
     let isStage = $state(false);
@@ -19,4 +19,4 @@
     }
 </script>
 
-<button class={class_} onclick={handleClick}>{@render children()}{isStage ? '?' : ''}</button>
+<button {...etc} onclick={handleClick}>{@render children()}{isStage ? '?' : ''}</button>
