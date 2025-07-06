@@ -78,6 +78,7 @@ export const actions = {
         const formData = await event.request.formData();
         const image = formData.get('image');
         let imageUpload;
+        const table = newsgroupAddress(event.params.address);
 
         if (!(image instanceof File) || image.size === 0) {}
         else {
@@ -97,8 +98,15 @@ export const actions = {
         if (!postId) {
             return fail(400, { message: 'Post ID is required' });
         }
+        let [postExists] = await db
+            .select()
+            .from(table)
+            .where(eq(table.id, postId))
+            .limit(1);
+        if (!postExists) {
+            return fail(404, { message: 'Post not found' });
+        }
 
-        const table = newsgroupAddress(event.params.address);
         await db.insert(table).values({
             id: crypto.randomUUID(),
             type: "reply",

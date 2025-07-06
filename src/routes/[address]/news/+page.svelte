@@ -6,6 +6,7 @@
     import PostWriter from "./PostWriter.svelte";
     import PostReader from "./PostReader.svelte";
     import ReplyWriter from "./ReplyWriter.svelte";
+    import {onMount} from "svelte";
 
     let { data, form } = $props();
 
@@ -31,6 +32,9 @@
         if (!posts.find(p => p.id === currentlySelected) && !drafts.find(d => d.id === currentlySelected)) {
             currentlySelected = null;
         }
+        if (posts.find(p => p.id === currentlySelected)) {
+            loadReplies(posts.find(p => p.id === currentlySelected));
+        }
     })
 
     const createDraft = () => {
@@ -53,19 +57,42 @@
             `/${data.address.address}/news/post`,
             { method: 'GET' }
         )
-            .then(response => response.json())
+            .then(async response => {
+                if (!response.ok) throw new Error((await response.text()));
+                return response.json()
+            })
             .then(data => {
-                posts = data.posts || [];
-                isLoadingPosts = false;
+                console.log(!data.posts.find(p => p.id === currentlySelected) &&
+                    !drafts.find(d => d.id === currentlySelected) &&
+                    posts.find(p => p.id === currentlySelected)?.replies?.find(r => r.id.startsWith("draft")))
+                if (
+                    !data.posts.find(p => p.id === currentlySelected) &&
+                    !drafts.find(d => d.id === currentlySelected) &&
+                    posts.find(p => p.id === currentlySelected)?.replies?.find(r => r.id.startsWith("draft"))
+                ) {
+                    if (!confirm("The post you are viewing has been deleted. Would you like to load current data, deleting your draft??")) {
+                        alert("You will be asked to reconfirm in 30 seconds.")
+                    } else {
+                        posts = data.posts || [];
+                        isLoadingPosts = false;
+                        currentlySelected = null;
+                    }
+                } else {
+                    posts = data.posts || [];
+                    isLoadingPosts = false;
+                }
             })
             .catch(error => {
+                alert("Failed to delete post: " + error.message);
                 console.error('Error fetching posts:', error);
                 isLoadingPosts = false;
             }
         )
     }
 
-    setInterval(() => getPosts(), 30000)
+    onMount(() => {
+        setInterval(() => getPosts(), 30000)
+    })
 
     const deletePost = post => {
         currentlySelected = null;
@@ -74,8 +101,12 @@
             `/${data.address.address}/news/post?id=${post.id}`,
             { method: 'DELETE' }
         )
-            .then(() => getPosts())
+            .then(async response => {
+                if (!response.ok) throw new Error((await response.text()));
+                getPosts()
+            })
             .catch(error => {
+                alert("Failed to delete post: " + error.message);
                 console.error('Error deleting post:', error);
                 isLoadingPosts = false;
             })
@@ -87,7 +118,10 @@
             `/${data.address.address}/news/replies?id=${posts[ind]?.id}`,
             { method: 'GET' }
         )
-            .then(response => response.json())
+            .then(async response => {
+                if (!response.ok) throw new Error((await response.text()));
+                return response.json()
+            })
             .then(data => {
                 let test = data.replies.length;
                 console.log(posts, post, posts.at(ind), data.replies, ind)
@@ -95,6 +129,7 @@
                 isLoadingPosts = false;
             })
             .catch(error => {
+                alert("Failed to delete post: " + error.message);
                 console.error('Error loading replies:', error);
                 isLoadingPosts = false;
             }
@@ -108,8 +143,6 @@
 </script>
 
 <svelte:window onbeforeunload={exitIfDraft}></svelte:window>
-
-{@debug drafts, posts, currentlySelected, isLoadingPosts}
 
 <div >
     <div class="absolute inset-0 -z-50 bg-[#242424]">
@@ -138,6 +171,8 @@
                         <span>{posts.length} items</span>
                         {#if isLoadingPosts}
                             <span class="text-sm text-neutral-400 animate-pulse">updating...</span>
+                        {:else}
+                            <span class="text-sm underline cursor-pointer" onclick={() => getPosts()}>refresh</span>
                         {/if}
                     </div>
                     <div class="flex flex-row space-x-2">
