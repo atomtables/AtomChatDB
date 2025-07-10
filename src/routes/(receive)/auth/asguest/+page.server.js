@@ -3,7 +3,7 @@ import {hash} from "@node-rs/argon2";
 import {db} from "$lib/server/db/index.js";
 import * as table from "$lib/server/db/schema.ts";
 import * as auth from "$lib/server/auth.js";
-import {generateUserId, validateIdentifier, validatePassword, validateUsername} from "$lib/authclient.js";
+import {generateUserId, validateIdentifier, validatePassword, validateUsername} from "$lib/authclient.ts";
 import {generateSessionToken} from "$lib/server/auth.js";
 
 export const actions = {

@@ -51,10 +51,10 @@
         currentlySelected = newDraft.id;
     }
 
-    const getPosts = () => {
+    const getPosts = async () => {
         isLoadingPosts = true;
-        fetch(
-            `/${data.address.address}/news/post`,
+        await fetch(
+            `/${data.address.address}/news/post/`,
             { method: 'GET' }
         )
             .then(async response => {
@@ -62,9 +62,10 @@
                 return response.json()
             })
             .then(data => {
-                console.log(!data.posts.find(p => p.id === currentlySelected) &&
-                    !drafts.find(d => d.id === currentlySelected) &&
-                    posts.find(p => p.id === currentlySelected)?.replies?.find(r => r.id.startsWith("draft")))
+                for (let i = 0; i < data.posts.length; i++) {
+                    let ind1 = posts.findIndex(p => p.id === data.posts[i].id);
+                    if (ind1 !== -1) data.posts[i].replies = posts[ind1].replies;
+                }
                 if (
                     !data.posts.find(p => p.id === currentlySelected) &&
                     !drafts.find(d => d.id === currentlySelected) &&
@@ -73,7 +74,7 @@
                     if (!confirm("The post you are viewing has been deleted. Would you like to load current data, deleting your draft??")) {
                         alert("You will be asked to reconfirm in 30 seconds.")
                     } else {
-                        posts = data.posts || [];
+                        posts = data.posts;
                         isLoadingPosts = false;
                         currentlySelected = null;
                     }
@@ -83,7 +84,7 @@
                 }
             })
             .catch(error => {
-                alert("Failed to delete post: " + error.message);
+                alert("Failed to get posts: " + error.message);
                 console.error('Error fetching posts:', error);
                 isLoadingPosts = false;
             }
@@ -103,7 +104,7 @@
         )
             .then(async response => {
                 if (!response.ok) throw new Error((await response.text()));
-                getPosts()
+                await getPosts()
             })
             .catch(error => {
                 alert("Failed to delete post: " + error.message);
@@ -123,13 +124,13 @@
                 return response.json()
             })
             .then(data => {
-                let test = data.replies.length;
-                console.log(posts, post, posts.at(ind), data.replies, ind)
-                posts[ind].replies = data.replies || [];
+                let draft = posts[ind]?.replies?.filter(p => p.id.startsWith("draft")) || [];
+                console.log("im here...", data.replies, draft)
+                posts[ind].replies = [...data.replies, ...draft];
                 isLoadingPosts = false;
             })
             .catch(error => {
-                alert("Failed to delete post: " + error.message);
+                alert("Failed to get replies: " + error.message);
                 console.error('Error loading replies:', error);
                 isLoadingPosts = false;
             }
@@ -213,7 +214,7 @@
                                     <!-- post reader crap -->
                                     {@const post = posts.find(p => p.id === currentlySelected)}
                                     <div class="h-full overflow-y-scroll flex flex-col space-y-2">
-                                        <PostReader {deletePost} {post} address={data.address.address} user={data.user} />
+                                        <PostReader  {deletePost} {post} address={data.address.address} user={data.user} />
                                         {#each post.replies as reply, ind (reply.id)}
                                             {#if reply.id.startsWith("draft")}
                                                 <ReplyWriter
@@ -251,7 +252,9 @@
                                                         createdAt: new Date(),
                                                     });
                                                 }}
-                                                    class="mb-2 p-2 cursor-pointer border-2 border-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50">reply</button>
+                                                    class="mb-2 p-2 cursor-pointer border-2 border-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50 disabled:text-neutral-500 disabled:cursor-not-allowed"
+                                                    disabled={post.deleted}
+                                            >reply</button>
                                         </div>
                                     </div>
                                 {/if}

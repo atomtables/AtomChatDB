@@ -1,7 +1,7 @@
-import * as auth from '$lib/server/auth';
+import * as auth from '$lib/server/auth.js';
 import {error, fail, redirect} from '@sveltejs/kit';
 import { getRequestEvent } from '$app/server';
-import {requireLogin} from "$lib/authclient.js";
+import {requireLogin} from "$lib/authclient.ts";
 
 export const load = async () => {
     const user = requireLogin()

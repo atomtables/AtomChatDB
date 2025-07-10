@@ -4,7 +4,7 @@ import * as table from "$lib/server/db/schema.ts";
 import {eq} from "drizzle-orm";
 import {verify} from "@node-rs/argon2";
 import * as auth from "$lib/server/auth.js";
-import {validateIdentifier, validatePassword, validateUsername} from "$lib/authclient.js";
+import {validateIdentifier, validatePassword, validateUsername} from "$lib/authclient.ts";
 
 export const actions = {
     default: async (event) => {

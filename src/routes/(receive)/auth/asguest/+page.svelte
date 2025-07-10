@@ -58,5 +58,5 @@
 <div class="mt-2">
     <a href="/" class="inline underline">&lt; back</a>
 
-    <a href="/auth/login" class="inline underline">login &gt;</a>
+    <a href="/(receive)/auth/login" class="inline underline">login &gt;</a>
 </div>
