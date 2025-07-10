@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite dev --host 0.0.0.0",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -14,8 +14,8 @@
 		"db:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^6.0.0",
-		"@sveltejs/kit": "^2.16.0",
+		"@sveltejs/adapter-node": "https://pkg.pr.new/sveltejs/kit/@sveltejs/adapter-node@12973",
+		"@sveltejs/kit": "https://pkg.pr.new/sveltejs/kit/@sveltejs/kit@12973",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
@@ -31,7 +31,10 @@
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
 		"drizzle-orm": "^0.40.0",
-		"postgres": "^3.4.5"
+		"postgres": "^3.4.5",
+		"sharp": "^0.34.2",
+		"socket.io": "^4.8.1",
+		"socket.io-client": "^4.8.1"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

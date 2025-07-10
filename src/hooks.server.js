@@ -2,6 +2,7 @@ import * as auth from '$lib/server/auth';
 
 const handleAuth = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
+	const ipAddress = event.getClientAddress();
 
 	if (!sessionToken) {
 		event.locals.user = null;
@@ -14,6 +15,12 @@ const handleAuth = async ({ event, resolve }) => {
 		let {session, user} = await auth.validateGuestSessionToken(sessionToken);
 		sessions = session
 		users = user
+		if (users.person !== ipAddress) {
+			// If the IP address has changed, invalidate the session
+			try { await auth.invalidateGuestSession(sessionToken); } catch {}
+			sessions = null;
+			users = null;
+		}
 	} else {
 		let {session, user} = await auth.validateSessionToken(sessionToken);
 		sessions = session
@@ -26,7 +33,7 @@ const handleAuth = async ({ event, resolve }) => {
 		auth.deleteSessionTokenCookie(event);
 	}
 
-	users.isGuest = sessionToken.startsWith("guest_");
+	if (users) users.isGuest = sessionToken.startsWith("guest_");
 	event.locals.user = users;
 	event.locals.session = sessions;
 	return resolve(event);

@@ -1,4 +1,4 @@
-import {pgTable, serial, integer, text, timestamp, date, customType, varchar, boolean} from 'drizzle-orm/pg-core';
+import {pgTable, serial, integer, text, timestamp, date, customType, varchar, boolean, uuid} from 'drizzle-orm/pg-core';
 import {encodeBase64NoPadding} from "@oslojs/encoding";
 import {relations} from "drizzle-orm";
 
@@ -7,7 +7,8 @@ export const user = pgTable('users', {
 	birth: date("birth", {mode: "date"}).notNull(),
 	person: text('person').notNull(),
 	username: text('username').notNull().unique(),
-	passwordHash: text('password_hash').notNull()
+	passwordHash: text('password_hash').notNull(),
+	image: text('image64') // ensure size is compressed to max 500p
 });
 
 /*
@@ -31,28 +32,47 @@ export const session = pgTable('sessions', {
 });
 
 // CREATE TABLE new_table (LIKE template_group INCLUDING ALL);
-export const template_chatgroup = pgTable("template_chatgroup", {
+/*export const template_chatgroup = pgTable("template_chatgroup", {
 	id: text('id').primaryKey(),
 	content: varchar('content', { length: 1999 }).notNull(),
 	image: text('image64'), // an image file encoded base64
 	username: text('username').notNull(),
 	authorId: text('authorId'),
 	sentByGuest: boolean('sentByGuest').default(false).notNull(),
+	guestUsername: text('guestUsername'), // the username of the guest who sent this message
 	createdAt: timestamp('createdAt', { mode: 'date', withTimezone: true }).notNull().defaultNow()
 })
 
 // requires additional statement to add the fk
-export const template_newsgroup = pgTable("template_newsgroup", {
+export const template_newsgroup = pgTable("group_template", {
 	id: text('id').primaryKey(),
 	type: text('type').notNull(), // "post" or "reply"
 	title: text('title'), // the title of the post
 	content: varchar('content', { length: 1999 }).notNull(),
 	replyTo: text('replyTo').references(() => template_newsgroup.id, { onDelete: "cascade", onUpdate: "cascade" }), // the ID of the post this is replying to
 	image: text('image64'), // an image file encoded base64
-	username: text('username').notNull(),
-	authorId: text('authorId'),
+	authorId: text('authorId'), // can be null if guest or deleted user
 	sentByGuest: boolean('sentByGuest').default(false).notNull(),
+	guestUsername: text('guestUsername'), // the username of the guest who sent this message
 	createdAt: timestamp('createdAt', { mode: 'date', withTimezone: true }).notNull().defaultNow()
+})*/
+
+export const groupTemplate = pgTable("group_template", {
+	id: text('id').primaryKey(),
+	type: text('type').notNull(), // "post" or "reply"
+
+	title: text('title'), // the title of the post (null for chatgroup)
+	content: varchar('content', { length: 1999 }).notNull(),
+	replyTo: text('replyTo').references(() => groupTemplate.id), // the ID of the post this is replying to
+	image: text('image64'), // an image file encoded base64
+
+	username: text('username').notNull(), // this way there's an easy way to access simple metadata
+	authorId: text('authorId'), // can be null if guest or deleted user
+	sentByGuest: boolean('sentByGuest').default(false).notNull(),
+
+	createdAt: timestamp('createdAt', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
+	// if the post is being deleted for history's sake it should still be in the DB so replies stay alive.
+	deleted: boolean('deleted').default(false).notNull(), // whether the post has been deleted
 })
 
 export const groups = pgTable('groups', {

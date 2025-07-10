@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm';
-import { sha256 } from '@oslojs/crypto/sha2';
-import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
-import { db } from '$lib/server/db';
+import {eq} from 'drizzle-orm';
+import {sha256} from '@oslojs/crypto/sha2';
+import {encodeBase64url, encodeHexLowerCase} from '@oslojs/encoding';
+import {db} from '$lib/server/db';
 import * as table from '$lib/server/db/schema.js';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
@@ -10,8 +10,7 @@ export const sessionCookieName = 'auth-session';
 
 export function generateSessionToken() {
 	const bytes = crypto.getRandomValues(new Uint8Array(18));
-	const token = encodeBase64url(bytes);
-	return token;
+	return encodeBase64url(bytes);
 }
 
 /**
@@ -41,9 +40,14 @@ export async function createGuestSession(username, token, ip) {
 	return guestSession;
 }
 
-/** @param {string} token */
-export async function validateSessionToken(token) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+/** @param {string} token
+ *  @param hashed
+ */
+export async function validateSessionToken(token, hashed = false) {
+	let sessionId;
+	if (!hashed)
+		sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	else sessionId = token;
 	const [result] = await db
 		.select({
 			// Adjust user table here to tweak returned data
@@ -58,7 +62,7 @@ export async function validateSessionToken(token) {
 		return { session: null, user: null };
 	}
 	const { session, user } = result;
-	user.passwordHash = null;
+	user.passwordHash = undefined;
 
 	const sessionExpired = Date.now() >= session.expiresAt.getTime();
 	if (sessionExpired) {
@@ -75,11 +79,23 @@ export async function validateSessionToken(token) {
 			.where(eq(table.session.id, session.id));
 	}
 
-	return { session, user };
+	let puser = {
+		id: user.id,
+		username: user.username,
+		birth: new Date(),
+		person: user.person || null, // Assuming 'person' is a field in the user table
+		image: user.image || null, // Assuming 'image' is a field in the user table
+		isGuest: false
+	}
+
+	return { session, user: puser };
 }
 
-export async function validateGuestSessionToken(token) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+export async function validateGuestSessionToken(token, hashed = false) {
+	let sessionId;
+	if (!hashed)
+		sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	else sessionId = token;
 	const [result] = await db
 		.select()
 		.from(table.guest)
@@ -89,7 +105,7 @@ export async function validateGuestSessionToken(token) {
 	const user = result;
 	const sessionExpired = Date.now() >= user.expiresAt.getTime();
 	if (sessionExpired) {
-		await db.delete(table.guest).where(eq(table.guest.id, session.id));
+		await db.delete(table.guest).where(eq(table.guest.id, sessionId));
 		return { session: null, user: null };
 	}
 
@@ -102,7 +118,9 @@ export async function validateGuestSessionToken(token) {
 		id: sessionId,
 		username: user.username,
 		birth: new Date(),
-		person: user.ipAddr
+		person: user.ipAddr,
+		isGuest: true,
+		image: null
 	}
 
 	return { session: pSession, user: pUser };
