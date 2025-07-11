@@ -1,6 +1,8 @@
 import {db, groupaddr} from "$lib/server/db/index.js";
 import {asc, desc, eq} from "drizzle-orm";
 import {fail} from "@sveltejs/kit";
+import {invalidateGuestSession, invalidateSession, validateSessionToken} from "$lib/server/auth.js";
+import * as auth from "$lib/server/auth.js";
 
 export const GET = async ({ url, params }) => {
     // get post id

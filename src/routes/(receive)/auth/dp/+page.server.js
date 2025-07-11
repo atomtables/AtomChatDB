@@ -19,7 +19,7 @@ export const actions = {
             return fail(400, { message: 'Image is required' });
         }
         const buffer = Buffer.from(await image.arrayBuffer());
-        const compressed = await sharp(buffer).resize({width: 400}).jpeg({quality: 70}).toBuffer();
+        const compressed = await sharp(buffer).resize({width: 256}).jpeg({quality: 70}).toBuffer();
         const base64 = compressed.toString('base64');
         imageUpload = `data:image/jpeg;base64,${base64}`;
 

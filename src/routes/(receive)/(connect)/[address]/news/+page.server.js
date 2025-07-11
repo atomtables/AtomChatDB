@@ -5,9 +5,13 @@ import {invalidateGuestSession, invalidateSession, validateSessionToken} from "$
 import {error, fail} from "@sveltejs/kit";
 import * as table from "$lib/server/db/schema.ts";
 
-export const load = async ({ params, fetch }) => {
-    if ((await db.select().from(table.groups).where(eq(table.groups.address, params.address)))?.[0]?.type !== 'news') {
-        return error(404, { message: 'This address does not exist or is not a news group.' });
+export const load = async ({ locals, params, fetch }) => {
+    if (!locals.user || !locals.session) {
+        return error(401, { message: 'Unauthorized' });
+    }
+
+    if ((await db.select().from(table.groups).where(eq(table.groups.address, params.address)))?.[0]?.type !== 'chat') {
+        return error(404, { message: 'This address does not exist or is not a chat group.' });
     }
 
     return {

@@ -29,6 +29,13 @@
       "when": 1751780014993,
       "tag": "0003_round_machine_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1752137402150,
+      "tag": "0004_faithful_bushwacker",
+      "breakpoints": true
     }
   ]
 }

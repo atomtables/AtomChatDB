@@ -8,7 +8,7 @@
 </script>
 
 {#each drafts as draft (draft.id)}
-    <button class="flex flex-row items-center space-x-2 hover:bg-neutral-500/20 p-2 cursor-pointer w-full"
+    <button class="flex flex-row items-center space-x-2 mb-2 hover:bg-neutral-500/20 p-2 cursor-pointer w-full"
             onclick={() => {
                 currentlySelected = draft.id;
             }}>
@@ -22,7 +22,7 @@
     </button>
 {/each}
 {#each posts as post, ind (post.id)}
-    <button class="flex flex-row items-center space-x-2 {currentlySelected === post.id && 'bg-neutral-500/10'} {post.deleted && 'bg-red-700/20'} hover:bg-neutral-500/20 p-2 cursor-pointer w-full"
+    <button class="flex flex-row items-center space-x-2 mb-2 {currentlySelected === post.id && 'bg-neutral-500/10'} {post.deleted && 'bg-red-700/20'} hover:bg-neutral-500/20 p-2 cursor-pointer w-full"
             onclick={() => {
                 currentlySelected = post.id;
                 loadReplies(ind);

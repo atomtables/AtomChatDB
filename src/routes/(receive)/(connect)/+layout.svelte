@@ -86,10 +86,10 @@
                 <img
                     src={data.user.image}
                     alt="user image"
-                    class="w-8 h-8 mx-2 rounded-full hover:bg-blend-darken"
+                    class="w-8 h-8 ml-2 rounded-full hover:bg-blend-darken"
                 >
             {/if}
-            <b class="mr-2">{data.user.username}</b>
+            <b class="mx-2">{data.user.username}</b>
             ({data.user.person})
             <a href="/auth/logout" class="underline block text-red-200 mx-2">log out</a>
         </div>

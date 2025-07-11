@@ -59,7 +59,7 @@ export const template_newsgroup = pgTable("group_template", {
 
 export const groupTemplate = pgTable("group_template", {
 	id: text('id').primaryKey(),
-	type: text('type').notNull(), // "post" or "reply"
+	type: text('type').notNull(), // news: "post" or "reply", chat: "message"
 
 	title: text('title'), // the title of the post (null for chatgroup)
 	content: varchar('content', { length: 1999 }).notNull(),

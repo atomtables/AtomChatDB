@@ -1,10 +1,10 @@
 import { error } from "@sveltejs/kit";
 import { type RequestEvent, type Peer } from "@sveltejs/kit";
 import {db} from "$lib/server/db/index.js";
-import * as table from "$lib/server/db/schema.js";
+import * as schema from "$lib/server/db/schema.js";
 import {desc, eq} from "drizzle-orm";
 import {validateGuestSessionToken, validateSessionToken} from "$lib/server/auth.js";
-import {chatroomAddress} from "$lib/server/db/index.js";
+import {groupaddr} from "$lib/server/db/index.js";
 import {getPeers} from "$app/server";
 /**
  * 3000 - unauthorised
@@ -37,10 +37,12 @@ type PeerProperty = [PeerStatus, PeerWaiting, Timeout | null, Interval | null]
 interface PeerData {
     ping: PeerProperty,
     verify: PeerProperty,
+    verified?: boolean
     errors: number,
     identity: User,
     peer: Peer,
-    broadcasted: boolean
+    broadcasted: boolean,
+    address: string
 }
 
 let peers: {
@@ -48,11 +50,10 @@ let peers: {
 } = {};
 
 const errors = {
-    failedparse(peer: Peer) {peer.send(JSON.stringify({sub: "error", type: "failed_parse", errors: -1})); peer.close(3001); killPeer(peer)},
-    invalidstate(peer: Peer, data: string) {peer.send(JSON.stringify({sub: "error", type: "invalid state", errors: ++peers[peer.id].errors, data}))}
+    failedparse(peer: Peer) {peer.send(JSON.stringify({sub: "error", type: "failed_parse", errors: ++peers[peer.id].errors}))},
+    invalidstate(peer: Peer, data: string) {peer.send(JSON.stringify({sub: "error", type: "invalid state", errors: ++peers[peer.id].errors, data}))},
+    permissiondenied(peer: Peer) {peer.send(JSON.stringify({sub: "error", type: "permission_denied", errors: ++peers[peer.id].errors}))}
 }
-
-let address: string | null;
 
 // setup is designed to be server run: clients only respond when server responds.
 export const socket = {
@@ -64,11 +65,10 @@ export const socket = {
         if (!/^[a-z.]+$/.test(addr)) {
             return error(400, {message: 'Invalid address format'});
         }
-        address = addr;
         let [server] = await db
             .select()
-            .from(table.groups)
-            .where(eq(table.groups.address, address))
+            .from(schema.groups)
+            .where(eq(schema.groups.address, addr))
             .limit(1);
 
         if (!server) {
@@ -79,21 +79,26 @@ export const socket = {
         }
     },
     async open(peer: Peer) {
-        console.log(`Peer ${peer.id} connected`);
+        console.log(`${peer.id.slice(0, 8)} => ${getPeerAddress(peer)}`);
         sendPeer(peer, {
             sub: "verify",
             type: 'request',
             timeout: 60
         })
         peers[peer.id] = {
-            verify: [PeerStatus.stage1, PeerWaiting.Client, setTimeout(() => killPeer(peer), 60000), setInterval(() => {
+            verify: [
+                PeerStatus.stage1,
+                PeerWaiting.Client,
+                setTimeout(() => killPeer(peer), 60000),
+                setInterval(() => {
                 if (!peers[peer.id]) { clearInterval(peers[peer.id]?.verify[3]); return; }
                 let [status, party, timeout] = peers[peer.id].verify;
                 if (status === PeerStatus.idle && party === PeerWaiting.Server) {
                     sendPeer(peer, {sub: "verify", type: "request", timeout: 60});
                     peers[peer.id].verify = [PeerStatus.stage1, PeerWaiting.Client, setTimeout(() => killPeer(peer), 60000), peers[peer.id].verify[3]];
                 }
-            }, 600000)],
+            }, 600000)
+            ],
             ping: [PeerStatus.idle, PeerWaiting.Server, null, setInterval(() => {
                 if (!peers[peer.id]) { clearInterval(peers[peer.id]?.ping[3]); return; }
                 let [status, party, timeout] = peers[peer.id].ping;
@@ -105,42 +110,92 @@ export const socket = {
             errors: 0,
             identity: null,
             peer,
-            broadcasted: false
+            broadcasted: false,
+            address: getPeerAddress(peer)
         }
     },
     async message(peer: Peer, msg: Buffer) {
+        let table = groupaddr(peers[peer.id].address)
         let message: any;
         try { message = JSON.parse(msg.toString()) } catch (e) { errors.failedparse(peer); return; }
 
-        if (message.sub === 'verify') await verify(peer, message);
-        if (message.sub === 'ping') await ping(peer, message);
-        if (message.sub === 'data') {
-            if (message.type === 'initial_request') {
-                let table = chatroomAddress(address)
-                let current_messages = await db
-                    .select()
-                    .from(table)
-                    .orderBy(desc(table.createdAt))
-                    .limit(100);
-                let users = Object.entries(peers)
-                    .map(([_, p]) => p.identity)
-                    .filter(u => u !== null)
-                    .filter(u => u.id !== peers[peer.id].identity.id);
-                peer.send(JSON.stringify({
-                    sub: "data",
-                    type: "initial_response",
-                    data: {
-                        messages: current_messages,
-                        users: users
-                    }
-                }));
-            }
+        switch (message.sub) {
+            case 'verify':
+                await verify(peer, message);
+                break;
+            case 'ping':
+                await ping(peer, message);
+                break;
+            case 'data':
+                if (!peers[peer.id]?.verified) errors.permissiondenied(peer)
+                switch (message.type) {
+                    case 'initial_request':
+                        let current_messages = await db
+                            .select()
+                            .from(table)
+                            .orderBy(desc(table.createdAt))
+                            .limit(100);
+                        let users = Object.entries(peers)
+                            .filter(([_, p]) => p.address === peers[peer.id].address)
+                            .map(([_, p]) => p.identity)
+                            .filter(u => u !== null)
+                            .filter(u => u.id !== peers[peer.id].identity.id)
+                            .map(u => {
+                                if (!u.image) u.image = `https://api.dicebear.com/5.x/initials/jpg?seed=${u.username}`;
+                                return u
+                            })
+                            .filter(u => u !== null && u.id !== null);
+                        peer.send(JSON.stringify({
+                            sub: "data",
+                            type: "initial_response",
+                            data: {
+                                messages: current_messages,
+                                users: users
+                            }
+                        }));
+                        break;
+                    case 'message_send':
+                        let {
+                            content,
+                            image,
+                            replyTo
+                        } = message.data;
+                        if (!content || typeof content !== 'string' || content.length > 1999) { errors.failedparse(peer); return; }
+
+                        if (!peers[peer.id].identity) {
+                            errors.permissiondenied(peer);
+                            return;
+                        }
+
+                        // @ts-ignore
+                        let newmessage = await db.insert(table).values({
+                            id: crypto.randomUUID(),
+                            type: 'message',
+                            content,
+                            image,
+                            replyTo: replyTo || null,
+                            username: peers[peer.id].identity.username,
+                            authorId: peers[peer.id].identity.id,
+                            sentByGuest: peers[peer.id].identity.isGuest
+                        }).returning()
+
+                        sendBroadcast(peers[peer.id].address, {
+                            sub: "data",
+                            type: "message_send",
+                            data: newmessage
+                        });
+                    break;
+                }
+                break;
+            default:
+                errors.failedparse(peer);
+                break;
         }
     },
     async close(peer: Peer, event: any) {
         if (peers[peer.id]) {
-            console.log(`Peer ${peer.id} disconnected`);
-            sendBroadcast({
+            console.log(`${peer.id.slice(0, 8)} <= ${peers[peer.id].address}`);
+            sendBroadcast(peers[peer.id].address, {
                 sub: "data",
                 type: "user_left",
                 data: { user: peers[peer.id].identity }
@@ -163,9 +218,15 @@ const killPeer = (peer: Peer) => {
     }
     try {peer.close(3008)} catch {}
 }
-const sendBroadcast = (data: any) => {
+const getPeerAddress = (peer: Peer) => {
+    let url = peer.request.url;
+    return url.split('/')[3];
+}
+const sendBroadcast = (address: string, data: any, self: string = null) => {
     for (let peerId in peers) {
-        sendPeer(peers[peerId].peer, data);
+        if (peers[peerId].address === address && peers[peerId].verified && (self === null || peerId !== self)) {
+            sendPeer(peers[peerId].peer, data);
+        }
     }
 }
 
@@ -206,6 +267,7 @@ const verify = async (peer: Peer, message: any) => {
 
         let [existingSession] = Object.values(peers).filter(p => p.identity && p.identity.id === user.id);
         if (existingSession) {
+            console.warn(`Peer ${peer.id} tried to connect with an already connected user ${user.username} (${user.id})`);
             sendPeer(existingSession.peer, {
                 sub: "error",
                 type: "another_session",
@@ -221,19 +283,23 @@ const verify = async (peer: Peer, message: any) => {
         timeout = null;
 
         sendPeer(peer, {sub: 'verify', type: 'accepted', data: {version: 1.0, ping: 30}})
+        if (!peers[peer.id].identity.image) peers[peer.id].identity.image = `https://api.dicebear.com/5.x/initials/jpg?seed=${peers[peer.id].identity.username}`;
         if (!peers[peer.id].broadcasted)
-            sendBroadcast({
+            sendBroadcast(peers[peer.id].address, {
                 sub: "data",
                 type: "user_joined",
                 data: { user: peers[peer.id].identity }
-            })
+            }, peer.id)
 
         peers[peer.id].verify = [status, party, timeout, null];
+        peers[peer.id].verified = true;
     }
+    else errors.failedparse(peer);
 }
 const ping = async (peer: Peer, message: any) => {
     if (message.type === 'ack') {
         if (peers[peer.id].ping[0] !== PeerStatus.stage1) {
+            console.log("invalid state")
             errors.invalidstate(peer, `Expected stage1, got ${peers[peer.id].ping[0]}`);
             return;
         }

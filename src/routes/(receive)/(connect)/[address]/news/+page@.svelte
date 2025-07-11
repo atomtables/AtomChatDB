@@ -95,8 +95,8 @@
         setInterval(() => getPosts(), 30000)
     })
 
-    const deletePost = post => {
-        currentlySelected = null;
+    const deletePost = (post, etc) => {
+        if (!etc) currentlySelected = null;
         isLoadingPosts = true;
         fetch(
             `/${data.address.address}/news/post?id=${post.id}`,
@@ -232,7 +232,7 @@
                                                             )}
                                                 />
                                             {:else}
-                                                <PostReader {deletePost} post={reply} address={data.address.address} user={data.user} />
+                                                <PostReader deletePost={post => deletePost(post, true)} post={reply} address={data.address.address} user={data.user} />
                                             {/if}
                                         {/each}
                                         <div class="flex flex-row self-end">
