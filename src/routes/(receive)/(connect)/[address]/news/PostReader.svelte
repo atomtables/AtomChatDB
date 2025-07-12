@@ -11,8 +11,11 @@
 
 <div class="flex flex-col p-2 bg-neutral-500/20 {post.deleted && 'bg-red-900/20'}">
     <div class="w-ful p-2 border-b-2 border-neutral-500">
-        <span class="">
-            From: {@html post.deleted ? '<i>[redacted]</i>' : `<b>${post.username} ${post.sentByGuest ? '(guest)' : ''}</b>`} on {new Date(post.createdAt).toLocaleString()}
+        <span class="flex flex-row items-center space-x-2">
+            From:
+            <img src="/public/dp/{post.username}.jpg" alt="author image" class="w-8 h-8 ml-2 rounded-full hover:bg-blend-darken">
+            {@html post.deleted ? '<i>[redacted]</i>' : `<b>${post.username} ${post.sentByGuest ? '(guest)' : ''}</b>`}
+            <span>on {new Date(post.createdAt).toLocaleString()}</span>
         </span>
     </div>
     <div class="w-full px-2 py-2 border-b-2 border-neutral-500">
@@ -21,12 +24,12 @@
     <div class="flex flex-row space-x-2 w-full px-2 py-2 border-b-2 border-neutral-500">
         <span class="font-bold">{post.title}</span>
     </div>
-    <div class="flex flex-col w-full h-full px-2 py-2 border-b-2 border-neutral-500">
+    <div class="flex flex-col w-full h-full items-start px-2 py-2 border-b-2 text-left border-neutral-500">
         {#if post.deleted}
             <i>This post has been deleted</i>
         {:else}
             {#if post.image}
-                <img src={post.image} alt="Post image" class="max-w-full max-h-96 object-contain my-2" />
+                <img src={`/public/images/${post.image}.jpg`} alt="Post image" class="max-h-96 object-contain my-2" />
             {/if}
             <pre class="whitespace pre-wrap break-words">{@html post.content}</pre>
         {/if}

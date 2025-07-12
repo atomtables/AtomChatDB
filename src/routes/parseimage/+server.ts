@@ -11,10 +11,12 @@ export const POST = async ({ locals, request }) => {
         return new Response("No image provided", { status: 400 });
     }
 
+    let photoId = crypto.randomUUID()
     const buffer = Buffer.from(await image.arrayBuffer());
-    const compressed = await sharp(buffer).resize({width: 600}).jpeg({quality: 50}).toBuffer();
-    const base64 = compressed.toString('base64');
-    imageUpload = `data:image/jpeg;base64,${base64}`;
+    await sharp(buffer)
+        .resize({width: 1200, withoutEnlargement: true})
+        .jpeg({quality: 60})
+        .toFile(`static/public/images/${photoId}.jpg`);
 
-    return new Response(imageUpload);
+    return new Response(photoId);
 }

@@ -56,10 +56,15 @@ export const POST = async (event) => {
 
     if (!(image instanceof File) || image.size === 0) {}
     else {
-        const buffer = Buffer.from(await image.arrayBuffer());
-        const base64 = buffer.toString('base64');
-        const mime = image.type;
-        imageUpload = `data:${mime};base64,${base64}`;
+        let res = await event.fetch("/parseimage", {
+            method: 'POST',
+            body: formData,
+            duplex: 'half'
+        })
+        if (!res.ok) {
+            return fail(400, { message: 'Image upload failed' });
+        }
+        imageUpload = await res.text();
     }
 
     const content = formData.get('content') || '';

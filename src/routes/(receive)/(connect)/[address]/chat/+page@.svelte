@@ -8,6 +8,20 @@
     let ws = $state();
     let state = $state({});
     let error = $state(null);
+    let textarea = $state();
+
+    $effect(() => {
+        if (textarea) {
+            this.style.height = "auto";
+            textarea.style.height = (textarea.scrollHeight) + "px";
+            textarea.style.overflowY = "hidden";
+
+            textarea.addEventListener("input", function() {
+                this.style.height = "auto";
+                this.style.height = this.scrollHeight + "px";
+            });
+        }
+    })
 
     onMount(() => {
         console.log(data.session.id);
@@ -133,6 +147,13 @@
     let toSendImage = $state();
     let toSendReply = $state();
     const sendMessage = async () => {
+        await new Promise(resolve => {
+            setInterval(() => {
+                if (!toProcessImage || toSendImage) {
+                    resolve();
+                }
+            }, 100);
+        })
         await ws.send(JSON.stringify({
             sub: 'data',
             type: 'message_send',
@@ -161,13 +182,6 @@
                 id: messageId
             }
         }));
-    };
-
-    const getDP = (user, username) => {
-        if (user === data.user.id) {
-            return data.user.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${data.user.username}`;
-        }
-        return state.users?.find(u => u.id === user)?.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${username}`
     };
 </script>
 
@@ -205,7 +219,6 @@
             {:else if !state.connected || !state.initial}
                 <div class="w-full h-full grid place-items-center">
                     <div class="flex flex-col items-center space-y-2">
-                        <img src="/pressed.png" alt="Connecting" class="w-24 h-24">
                         <h1 class="text-xl font-bold">Connecting...</h1>
                         <p class="text-sm text-neutral-400">currently at "{state.state || 'attempting connection'}".</p>
                     </div>
@@ -214,11 +227,7 @@
                 <div class="mx-2 flex flex-row flex-nowrap inset-0 h-[calc(100%-58px)]">
                     <div class="border-r-2 pr-2 border-neutral-500 h-full flex flex-col w-1/5 overflow-y-scroll shrink-0">
                         <button class="hover:bg-neutral-600/50 flex flex-row items-center w-full text-left p-2 font-bold">
-                            {#if data.user.image}
-                                <img src={data.user.image} alt="User Avatar" class="w-8 h-8 rounded-full inline-block mr-2">
-                            {:else}
-                                <span class="inline-block w-8 h-8 rounded-full bg-neutral-600 mr-2"></span>
-                            {/if}
+                            <img src="/public/dp/{data.user.username}.jpg" alt="User Avatar" class="w-8 h-8 rounded-full inline-block mr-2">
                             {data.user.username}
                             {#if data.user.isGuest}
                                 <span class="text-neutral-500">(guest)</span>
@@ -228,11 +237,7 @@
                         {#if state.users?.length > 0}
                             {#each state.users as user, ind (user.id)}
                                 <button class="hover:bg-neutral-600/50 flex flex-row items-center w-full text-left p-2 font-bold">
-                                    {#if user.image}
-                                        <img src={user.image} alt="User Avatar" class="w-8 h-8 rounded-full inline-block mr-2">
-                                    {:else}
-                                        <span class="inline-block w-8 h-8 rounded-full bg-neutral-600 mr-2"></span>
-                                    {/if}
+                                    <img src="/public/dp/{user.username}.jpg" alt="User Avatar" class="w-8 h-8 rounded-full inline-block mr-2">
                                     {user.username}
                                     {#if user.isGuest}
                                         <span class="text-neutral-500">(guest)</span>
@@ -249,9 +254,9 @@
                         <div class="flex flex-col">
                             <div class="flex flex-row space-x-2">
                                 <input type="text" placeholder={'"text" your friends here'}
-                                       class="h-14 x1 text-left w-full" bind:value={toSendMessage}>
+                                          class="h-14 x1 text-left w-full" bind:value={toSendMessage}>
                                 <button
-                                        class="bg-neutral-800/10 transition-colors h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer"
+                                        class="bg-neutral-800/10 transition-colors w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer"
                                         title="send message" onclick={() => sendMessage()}>
                                     →
                                 </button>
@@ -290,7 +295,7 @@
                                 <div id={message.id} class="target:border-l-2 group relative flex flex-col {!(ind > 0 && sameAuthor && tenMinutes) && 'mt-2 pt-0.5'} px-2 hover:backdrop-blur-3xl">
                                     {#if !(ind > 0 && sameAuthor && tenMinutes)}
                                         <div class="flex flex-row items-center space-x-2 pb-1">
-                                            <img src={message.authorImage} alt="{message.username}'s avatar" class="w-8 h-8 rounded-full inline-block mr-2">
+                                            <img src={`/public/dp/${message.username}.jpg`} alt="{message.username}'s avatar" class="w-8 h-8 rounded-full inline-block mr-2">
                                             <span class="font-bold">{message.username}</span>
                                         </div>
                                     {/if}
@@ -301,7 +306,7 @@
                                         <div class="">
                                             <p>{message.content}</p>
                                             {#if message.image}
-                                                <img src={message.image} alt="Image Message" class="max-w-50 mt-2 mb-2 h-auto rounded-lg">
+                                                <img src="/public/images/{message.username}.jpg" alt="Image Message" class="max-w-50 mt-2 mb-2 h-auto rounded-lg">
                                             {/if}
                                         </div>
                                     </div>

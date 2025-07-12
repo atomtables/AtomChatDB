@@ -6,6 +6,7 @@ import {desc, eq} from "drizzle-orm";
 import {validateGuestSessionToken, validateSessionToken} from "$lib/server/auth.js";
 import {groupaddr} from "$lib/server/db/index.js";
 import {getPeers} from "$app/server";
+import * as fs from "node:fs";
 /**
  * 3000 - unauthorised
  * 3001 - incorrect data
@@ -130,7 +131,7 @@ export const socket = {
                 if (!peers[peer.id]?.verified) errors.permissiondenied(peer)
                 switch (message.type) {
                     case 'initial_request':
-                        let current_messages = await Promise.all((await db
+                        let current_messages = (await db
                             .select()
                             .from(table)
                             .orderBy(desc(table.createdAt))
@@ -143,23 +144,7 @@ export const socket = {
                                     m.image = null;
                                 }
                                 return m;
-                            })
-                            .map(async m => {
-                                if (m.type !== 'message') return null;
-                                let image: string;
-                                if (!m.sentByGuest && m.authorId) {
-                                    let i = (await db
-                                        .select({image: schema.user.image})
-                                        .from(schema.user)
-                                        .where(eq(schema.user.id, m.authorId)))[0].image
-                                    image = i || `https://api.dicebear.com/5.x/initials/jpg?seed=${m.username}`;
-                                } else {
-                                    image = m.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${m.username}`;
-                                }
-                                // @ts-ignore
-                                m.authorImage = image;
-                                return m;
-                            }));
+                            });
                         let users = Object.entries(peers)
                             .filter(([_, p]) => p.address === peers[peer.id].address)
                             .map(([_, p]) => p.identity)
@@ -187,7 +172,7 @@ export const socket = {
                         } = message.data;
                         if (!content || typeof content !== 'string' || content.length > 1999) { errors.failedparse(peer); return; }
 
-                        if (image && !image.startsWith('data:image/')) {
+                        if (image && !fs.existsSync(`public/images/${image}.jpg`)) {
                             errors.failedparse(peer);
                             return;
                         }

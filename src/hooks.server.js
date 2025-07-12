@@ -1,6 +1,8 @@
 import * as auth from '$lib/server/auth';
+import * as fs from "node:fs";
 
-const handleAuth = async ({ event, resolve }) => {
+
+export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	const ipAddress = event.getClientAddress();
 
@@ -34,11 +36,20 @@ const handleAuth = async ({ event, resolve }) => {
 	}
 
 	if (users) users.isGuest = sessionToken.startsWith("guest_");
-	if (users && !users.image) users.image = `https://api.dicebear.com/5.x/initials/jpg?seed=${users.username}`
 
 	event.locals.user = users;
 	event.locals.session = sessions;
+
+	// if loading a DP from /public/dp and dp does not exist, get DP from a https://api.dicebear.com/5.x/initials/jpg?seed={data.user.username}
+	if (event.url.pathname.startsWith('/public/dp/') && !fs.existsSync(`static/${event.url.pathname}`)) {
+		const dpUrl = `https://api.dicebear.com/5.x/initials/jpg?seed=${event.url.pathname.split('/')[2]}`;
+		return await fetch(dpUrl)
+	}
+
 	return resolve(event);
 };
 
-export const handle = handleAuth;
+export const init = () => {
+	fs.mkdirSync("static/public/dp", { recursive: true });
+	fs.mkdirSync("static/public/images", { recursive: true });
+}

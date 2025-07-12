@@ -11,6 +11,7 @@ export const load = async ({locals}) => {
 export const actions = {
     default: async ({locals, request}) => {
         if (!locals.user) return { status: 401, body: { message: 'Unauthorized' } };
+        if (locals.user.isGuest) return fail(403, { message: 'No access to guests.' });
 
         const formData = await request.formData();
         const image = formData.get('image');
@@ -19,15 +20,15 @@ export const actions = {
             return fail(400, { message: 'Image is required' });
         }
         const buffer = Buffer.from(await image.arrayBuffer());
-        const compressed = await sharp(buffer).resize({width: 256}).jpeg({quality: 70}).toBuffer();
-        const base64 = compressed.toString('base64');
-        imageUpload = `data:image/jpeg;base64,${base64}`;
+        await sharp(buffer)
+            .resize({width: 256})
+            .jpeg({quality: 70})
+            .toFile(`static/public/dp/${locals.user.username}.jpg`);
 
         await db.update(table.user)
-            .set({ image: imageUpload })
+            .set({ image: true })
             .where(eq(table.user.id, locals.user.id));
 
-        // Redirect to login page
         return redirect(302, '/');
     }
 };

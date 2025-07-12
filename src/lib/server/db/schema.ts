@@ -8,7 +8,7 @@ export const user = pgTable('users', {
 	person: text('person').notNull(),
 	username: text('username').notNull().unique(),
 	passwordHash: text('password_hash').notNull(),
-	image: text('image64') // ensure size is compressed to max 500p
+	image: boolean('image') // ensure size is compressed to max 500p
 });
 
 /*
@@ -64,7 +64,7 @@ export const groupTemplate = pgTable("group_template", {
 	title: text('title'), // the title of the post (null for chatgroup)
 	content: varchar('content', { length: 1999 }).notNull(),
 	replyTo: text('replyTo').references(() => groupTemplate.id), // the ID of the post this is replying to
-	image: text('image64'), // an image file encoded base64
+	image: text('imageId'), // an image file encoded base64
 
 	username: text('username').notNull(), // this way there's an easy way to access simple metadata
 	authorId: text('authorId'), // can be null if guest or deleted user

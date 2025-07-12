@@ -82,13 +82,11 @@
 {#if data.auth}
     <div class="flex flex-row space-x-2 backdrop-blur-sm p-2">
         <div class="flex flex-row items-center">{data.user.isGuest ? 'connected' : 'logged in'} as
-            {#if data.user.image}
-                <img
-                    src={data.user.image}
+            <img
+                    src="/public/dp/{data.user.username}.jpg"
                     alt="user image"
                     class="w-8 h-8 ml-2 rounded-full hover:bg-blend-darken"
-                >
-            {/if}
+            >
             <b class="mx-2">{data.user.username}</b>
             ({data.user.person})
             <a href="/auth/logout" class="underline block text-red-200 mx-2">log out</a>

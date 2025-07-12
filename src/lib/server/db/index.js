@@ -21,12 +21,12 @@ setInterval(() => {
 export function groupaddr(address) {
     let table = pgTable(`address_${address}`, {
         id: text('id').primaryKey(),
-        type: text('type').notNull(), // "post" or "reply"
+        type: text('type').notNull(), // news: "post" or "reply", chat: "message"
 
         title: text('title'), // the title of the post (null for chatgroup)
         content: varchar('content', { length: 1999 }).notNull(),
-        replyTo: text('replyTo').references(() => table.id), // the ID of the post this is replying to
-        image: text('image64'), // an image file encoded base64
+        replyTo: text('replyTo').references(() => groupTemplate.id), // the ID of the post this is replying to
+        image: text('imageId'), // an image file encoded base64
 
         username: text('username').notNull(), // this way there's an easy way to access simple metadata
         authorId: text('authorId'), // can be null if guest or deleted user
