@@ -42,7 +42,7 @@ export const actions = {
 
         let content = await event.fetch(`/${event.params.address}/news/post`, {
             method: 'POST',
-            body: formData, // Browser will automatically set the correct Content-Type with boundary
+            body: formData,
             duplex: 'half'
         });
 
@@ -50,14 +50,11 @@ export const actions = {
     },
     replyPost: async (event) => {
         await permissionCheck(event);
-
-        // Parse the form data from the original request
         const formData = await event.request.formData();
 
-        // Forward the request with the parsed formData
         const response = await event.fetch(`/${event.params.address}/news/replies`, {
             method: 'POST',
-            body: formData, // Browser will automatically set the correct Content-Type with boundary
+            body: formData,
             duplex: 'half'
         });
 

@@ -11,15 +11,25 @@
 
     onMount(() => {
         console.log(data.session.id);
+
+        connect()
+
+        return () => {
+            ws.close(1000);
+        }
+    })
+
+    const connect = () => {
         ws = new WebSocket(`/${data.address.address}/chat/connect`);
         ws.onopen = () => {
-            state = {}
+            state = {state: "connected to server, waiting for auth"}
             console.log("WebSocket connection established");
         };
         ws.onmessage = ({data: d}) => {
             let msg = JSON.parse(d);
             if (msg.sub === 'verify') {
                 if (msg.type === 'request') {
+                    state.state = "authenticating"
                     ws.send(JSON.stringify({
                         sub: 'verify',
                         type: 'response',
@@ -29,14 +39,14 @@
                         }
                     }));
                 } else if (msg.type === 'accepted') {
+                    state.state = "authenticated, waiting for data"
+                    state.connected = true;
                     if (!state.initial) {
                         ws.send(JSON.stringify({
                             sub: 'data',
                             type: 'initial_request'
                         }))
-                        state.initial = true;
                     }
-                    state.connected = true;
                 } else if (msg.type === 'rejected') {
                     error = "Failed to connect due to an authentication issue. Please try later, or re-log back in."
                     ws.close(3003);
@@ -48,6 +58,7 @@
             if (msg.sub === 'data') {
                 switch (msg.type) {
                     case "initial_response":
+                        state.initial = true;
                         state.messages = msg.data.messages;
                         state.users = msg.data.users;
                         break;
@@ -59,32 +70,105 @@
                     case "user_left":
                         state.users = (state.users ?? []).filter(u => u.username !== msg.data.user.username);
                         break;
+                    case "message_send":
+                        state.messages = [msg.data, ...(state.messages || [])];
+                        break;
+                    case "message_delete":
+                        state.messages = (state.messages || []).map(m => {
+                            if (m.id === msg.data.id) {
+                                m.deleted = true
+                            }
+                            return m;
+                        });
+                        break;
+                }
+            }
+            if (msg.sub === 'error') {
+                if (msg.type === 'another_session')
+                    error = "You have been disconnected because you logged in from another device or browser. Please refresh the page to reconnect.";
+                else if (msg.type === 'internal')
+                    error = "An internal error occurred. Please try again later.";
+                else {
+                    console.log("Unknown error type:", msg.type, msg.data);
+                    alert("A " + msg.type + " error occurred.")
                 }
             }
         };
         ws.onclose = () => {
             state.connected = false;
+            if (!error) {
+                setTimeout(() => {
+                    connect();
+                    state.state = "waiting to reconnect"
+                }, 5000)
+            }
         }
-
-        return () => {
-            ws.close(1000);
-        }
-    })
-
-    let users = $derived(state.users || [])
+    }
 
     let toSendMessage = $state();
+    let toProcessImage = $state();
+    const fiximagefile = async event => {
+        try {
+            console.log(toProcessImage, event.target.files[0]);
+            let file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                toProcessImage = null;
+                return;
+            }
+            const formdata = new FormData();
+            formdata.append('image', file);
+            toSendImage = await (await fetch("/parseimage", {
+                method: 'POST',
+                body: formdata, // Browser will automatically set the correct Content-Type with boundary
+                duplex: 'half'
+            })).text();
+            console.log(toSendImage);
+        } catch (e) {
+            console.error("Failed to process image:", e);
+            alert(`Failed to process image. ${e.message}`);
+            toProcessImage = null;
+            toSendImage = null;
+        }
+    }
+    let toSendImage = $state();
+    let toSendReply = $state();
     const sendMessage = async () => {
         await ws.send(JSON.stringify({
             sub: 'data',
             type: 'message_send',
             data: {
                 content: toSendMessage,
-                image: null,
-                replyTo: null,
+                image: toSendImage,
+                replyTo: toSendReply?.id,
             }
         }));
+        toSendMessage = null;
+        toSendImage = null;
+        toProcessImage = null;
+        toSendReply = null;
     }
+
+    const messageReferringTo = id => {
+        if (!state.messages) return null;
+        return state.messages.find(m => m.id === id);
+    }
+
+    const deleteMessage = async (messageId) => {
+        await ws.send(JSON.stringify({
+            sub: 'data',
+            type: 'message_delete',
+            data: {
+                id: messageId
+            }
+        }));
+    };
+
+    const getDP = (user, username) => {
+        if (user === data.user.id) {
+            return data.user.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${data.user.username}`;
+        }
+        return state.users?.find(u => u.id === user)?.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${username}`
+    };
 </script>
 
 <svelte:window></svelte:window>
@@ -99,28 +183,36 @@
         </div>
     </div>
     <div class="w-11/12 mx-auto rounded-t-[75px] min-h-[calc(100vh-80px)] h-[calc(100vh-80px)] bg-neutral-500/10 backdrop-blur-md" transition:slide>
-        {#if error}
-            <div class="w-full h-full grid place-items-center">
-                {error}
+        <div class="pt-5 flex flex-col h-full">
+            <div class="pt-2 pb-2 mx-[200px] flex flex-row justify-between">
+                <div class="flex items-center space-x-2">
+                    {#if !state.connected}
+                        <span class="text-sm text-neutral-400 animate-pulse">connecting...</span>
+                    {:else}
+                        <span>{state?.users?.length || 0} other users</span>
+                    {/if}
+                </div>
+                <div class="flex flex-row space-x-2">
+                    <button onclick={() => { ws?.close(1000); goto('/') }} class="font-bold underline cursor-pointer">disconnect</button>
+                </div>
             </div>
-        {:else}
-            <div class="pt-5 flex flex-col h-full">
-                <div class="pt-2 pb-2 mx-[200px] flex flex-row justify-between">
-                    <div class="flex items-center space-x-2">
-                        {#if !state.connected}
-                            <span class="text-sm text-neutral-400 animate-pulse">connecting...</span>
-                        {:else}
-                            <span>{state?.users?.length || 0} other users</span>
-                        {/if}
-                    </div>
-                    <div class="flex flex-row space-x-2">
-                        <button onclick={() => { ws?.close(1000); goto('/') }} class="font-bold underline cursor-pointer">disconnect</button>
+            <hr class="w-full mx-auto">
+            <!-- actual menus -->
+            {#if error}
+                <div class="w-full h-full grid place-items-center">
+                    {error}
+                </div>
+            {:else if !state.connected || !state.initial}
+                <div class="w-full h-full grid place-items-center">
+                    <div class="flex flex-col items-center space-y-2">
+                        <img src="/pressed.png" alt="Connecting" class="w-24 h-24">
+                        <h1 class="text-xl font-bold">Connecting...</h1>
+                        <p class="text-sm text-neutral-400">currently at "{state.state || 'attempting connection'}".</p>
                     </div>
                 </div>
-                <hr class="w-full mx-auto">
-                <!-- actual menus -->
+            {:else}
                 <div class="mx-2 flex flex-row flex-nowrap inset-0 h-[calc(100%-58px)]">
-                    <div class="border-r-2 pr-2 border-neutral-500 h-full flex flex-col w-1/5 overflow-y-scroll">
+                    <div class="border-r-2 pr-2 border-neutral-500 h-full flex flex-col w-1/5 overflow-y-scroll shrink-0">
                         <button class="hover:bg-neutral-600/50 flex flex-row items-center w-full text-left p-2 font-bold">
                             {#if data.user.image}
                                 <img src={data.user.image} alt="User Avatar" class="w-8 h-8 rounded-full inline-block mr-2">
@@ -153,39 +245,100 @@
                             </div>
                         {/if}
                     </div>
-                    <div class="px-2 h-full flex flex-col grow overflow-y-scroll">
-                        <div class="flex flex-row space-x-2">
-                            <input type="text" placeholder={'"text" your friends here'}
-                                   class="h-14 x1 text-left w-full" bind:value={toSendMessage}>
-                            <button
-                                    class="bg-neutral-800/10 transition-colors h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer"
-                                    title="send message" onclick={() => sendMessage()}>
-                                →
-                            </button>
-                            <button class="bg-neutral-800/10 h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer"
-                                    title="upload an image">
-                                +
-                            </button>
-                        </div>
-                        {#each state.messages as message, ind (message.id)}
-                            <div class="flex flex-col my-2">
-                                <div class="flex flex-row items-center space-x-2">
-                                    <span class="font-bold">{message.username}</span>
-                                </div>
-                                <div class="ml-10 mt-1">
-                                    <p>{message.content}</p>
-                                    {#if message.image}
-                                        <img src={message.image} alt="Image Message" class="max-w-full h-auto rounded-lg">
-                                    {/if}
+                    <div class="px-2 h-full flex space-y-0 flex-col grow overflow-y-scroll">
+                        <div class="flex flex-col">
+                            <div class="flex flex-row space-x-2">
+                                <input type="text" placeholder={'"text" your friends here'}
+                                       class="h-14 x1 text-left w-full" bind:value={toSendMessage}>
+                                <button
+                                        class="bg-neutral-800/10 transition-colors h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer"
+                                        title="send message" onclick={() => sendMessage()}>
+                                    →
+                                </button>
+                                <!--                            <button class="bg-neutral-800/10 h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer"-->
+                                <!--                                    title="upload an image">-->
+                                <!--                                +-->
+                                <!--                            </button>-->
+                                <div class="flex items-centerbg-neutral-800/10 h-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer">
+                                    <label for="fileInput" class="flex flex-row items-center">
+                                        <span>+</span> <span>{toSendImage ? 'uploaded' : toProcessImage ? 'uploading' : 'image'}</span>
+                                    </label>
+                                    <input bind:value={toProcessImage} onchange={fiximagefile} id="fileInput" type="file" class="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer" />
                                 </div>
                             </div>
+                            {#if toSendReply}
+                                <div class="text-neutral-300 text-sm ml-2 truncate hover:underline">
+                                    ↪ replying to <b>{toSendReply.username}</b>: {toSendReply.content.slice(0, 35)}{toSendReply.content.length > 35 ? '...' : ''}
+                                </div>
+                            {/if}
+                        </div>
+                        {#each state.messages as message, ind (message.id)}
+                            {@const sentToday = new Date(message.createdAt).toDateString() === new Date().toDateString()}
+                            {@const sameAuthor = state.messages[ind-1]?.authorId === message.authorId}
+                            {@const diffDays = new Date(message.createdAt).toDateString() !== new Date(state.messages[ind - 1]?.createdAt).toDateString()}
+                            {@const tenMinutes = Math.abs(new Date(message.createdAt) - new Date(state.messages[ind - 1]?.createdAt)) <= 10 * 60 * 1000}
+                            {#if ind > 0 && diffDays}
+                                <div class="mt-2  text-center flex items-center space-x-2 px-2 before:content-[''] before:flex-[1] before:border-b-1 before:border-neutral-500 after:content-[''] after:flex-[1] after:border-b-1 after:border-neutral-500">
+                                    {#if sentToday}
+                                        Today
+                                    {:else}
+                                        {new Date(message.createdAt).toLocaleDateString()}
+                                    {/if}
+                                </div>
+                            {/if}
+                            {#if !message.deleted}
+                                <div id={message.id} class="target:border-l-2 group relative flex flex-col {!(ind > 0 && sameAuthor && tenMinutes) && 'mt-2 pt-0.5'} px-2 hover:backdrop-blur-3xl">
+                                    {#if !(ind > 0 && sameAuthor && tenMinutes)}
+                                        <div class="flex flex-row items-center space-x-2 pb-1">
+                                            <img src={message.authorImage} alt="{message.username}'s avatar" class="w-8 h-8 rounded-full inline-block mr-2">
+                                            <span class="font-bold">{message.username}</span>
+                                        </div>
+                                    {/if}
+                                    <div class="flex flex-row flex-nowrap items-center">
+                                        <div class="w-16 flex flex-col text-sm text-neutral-300 font-light shrink-0">
+                                            {new Date(message.createdAt).toLocaleTimeString({}, {hour: "2-digit", minute: "2-digit"}).replace(/ (p|a)m/gi, '$1').toLowerCase()}
+                                        </div>
+                                        <div class="">
+                                            <p>{message.content}</p>
+                                            {#if message.image}
+                                                <img src={message.image} alt="Image Message" class="max-w-50 mt-2 mb-2 h-auto rounded-lg">
+                                            {/if}
+                                        </div>
+                                    </div>
+                                    {#if message.replyTo}
+                                        {@const reply = messageReferringTo(message.replyTo)}
+                                        {#if reply.deleted}
+                                            <div class="text-neutral-300 text-sm ml-2 truncate">
+                                                ↪ replied to deleted message
+                                            </div>
+                                        {:else if reply}
+                                            <a class="text-neutral-300 text-sm ml-2 truncate hover:underline w-min" href="#{reply.id}">
+                                                ↪ replying to <b>{reply.username}</b>: {reply.content.slice(0, 35)}{reply.content.length > 35 ? '...' : ''}
+                                            </a>
+                                        {:else}
+                                            <div class="text-neutral-300 text-sm ml-2 truncate">
+                                                ↪ replied to a message that has not been loaded
+                                            </div>
+                                        {/if}
+                                    {/if}
+                                    <div class="absolute right-0 top-0 px-2 bg-neutral-700 opacity-50 hover:opacity-100 transition-opacity hidden group-hover:flex flex-row space-x-2">
+                                        <button class="cursor-pointer underline" onclick={() => toSendReply = message}>reply</button>
+                                        {#if message.authorId === data.user.id}
+                                            <button class="cursor-pointer underline text-red-500" onclick={() => deleteMessage(message.id)}>delete</button>
+                                        {/if}
+                                    </div>
+                                </div>
+                            {/if}
                         {/each}
+                        <div class="p-2"></div>
                     </div>
                 </div>
-            </div>
-        {/if}
+            {/if}
+        </div>
     </div>
 </main>
+
+
 
 {#snippet cutecat()}
     <div class="flex flex-row items-center space-x-5">

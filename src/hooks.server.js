@@ -35,6 +35,7 @@ const handleAuth = async ({ event, resolve }) => {
 
 	if (users) users.isGuest = sessionToken.startsWith("guest_");
 	if (users && !users.image) users.image = `https://api.dicebear.com/5.x/initials/jpg?seed=${users.username}`
+
 	event.locals.user = users;
 	event.locals.session = sessions;
 	return resolve(event);

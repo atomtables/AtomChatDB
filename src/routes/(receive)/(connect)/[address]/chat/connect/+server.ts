@@ -130,11 +130,36 @@ export const socket = {
                 if (!peers[peer.id]?.verified) errors.permissiondenied(peer)
                 switch (message.type) {
                     case 'initial_request':
-                        let current_messages = await db
+                        let current_messages = await Promise.all((await db
                             .select()
                             .from(table)
                             .orderBy(desc(table.createdAt))
-                            .limit(100);
+                            .limit(100))
+                            .map(m => {
+                                if (m.deleted) {
+                                    m.content = "[deleted message]";
+                                    m.username = "[redacted]";
+                                    m.authorId = null;
+                                    m.image = null;
+                                }
+                                return m;
+                            })
+                            .map(async m => {
+                                if (m.type !== 'message') return null;
+                                let image: string;
+                                if (!m.sentByGuest && m.authorId) {
+                                    let i = (await db
+                                        .select({image: schema.user.image})
+                                        .from(schema.user)
+                                        .where(eq(schema.user.id, m.authorId)))[0].image
+                                    image = i || `https://api.dicebear.com/5.x/initials/jpg?seed=${m.username}`;
+                                } else {
+                                    image = m.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${m.username}`;
+                                }
+                                // @ts-ignore
+                                m.authorImage = image;
+                                return m;
+                            }));
                         let users = Object.entries(peers)
                             .filter(([_, p]) => p.address === peers[peer.id].address)
                             .map(([_, p]) => p.identity)
@@ -162,13 +187,18 @@ export const socket = {
                         } = message.data;
                         if (!content || typeof content !== 'string' || content.length > 1999) { errors.failedparse(peer); return; }
 
+                        if (image && !image.startsWith('data:image/')) {
+                            errors.failedparse(peer);
+                            return;
+                        }
+
                         if (!peers[peer.id].identity) {
                             errors.permissiondenied(peer);
                             return;
                         }
 
                         // @ts-ignore
-                        let newmessage = await db.insert(table).values({
+                        let newmessage = (await db.insert(table).values({
                             id: crypto.randomUUID(),
                             type: 'message',
                             content,
@@ -177,7 +207,9 @@ export const socket = {
                             username: peers[peer.id].identity.username,
                             authorId: peers[peer.id].identity.id,
                             sentByGuest: peers[peer.id].identity.isGuest
-                        }).returning()
+                        }).returning())[0]
+                        // @ts-ignore
+                        newmessage.authorImage = peers[peer.id].identity.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${peers[peer.id].identity.username}`;
 
                         sendBroadcast(peers[peer.id].address, {
                             sub: "data",
@@ -185,6 +217,36 @@ export const socket = {
                             data: newmessage
                         });
                     break;
+                    case 'message_delete':
+                        if (!peers[peer.id].identity) {
+                            errors.permissiondenied(peer);
+                            return;
+                        }
+                        if (!message.data || !message.data.id || typeof message.data.id !== 'string') {
+                            errors.failedparse(peer);
+                            return;
+                        }
+                        let [msgToDelete] = await db
+                            .select()
+                            .from(table)
+                            .where(eq(table.id, message.data.id))
+                            .limit(1);
+                        if (!msgToDelete) {
+                            errors.failedparse(peer);
+                            return;
+                        }
+                        if (msgToDelete.authorId !== peers[peer.id].identity.id) {
+                            errors.permissiondenied(peer);
+                            return;
+                        }
+                        // @ts-ignore
+                        await db.update(table).set({deleted: true}).where(eq(table.id, message.data.id));
+                        sendBroadcast(peers[peer.id].address, {
+                            sub: "data",
+                            type: "message_delete",
+                            data: {id: message.data.id}
+                        });
+                        break;
                 }
                 break;
             default:
@@ -275,7 +337,6 @@ const verify = async (peer: Peer, message: any) => {
             })
             existingSession.peer.close(3003);
         }
-
         peers[peer.id].identity = user;
 
         status = PeerStatus.idle;
