@@ -109,6 +109,9 @@
             <b class="mx-2">{data.user.username}</b>
             ({data.user.person})
             <a href="/auth/logout" class="underline block text-red-200 mx-2">log out</a>
+            {#if !data.user.isGuest}
+                <a href="/auth/dp" class="underline block text-blue-500 mx-0">change dp</a>
+            {/if}
         </div>
 
     </div>
