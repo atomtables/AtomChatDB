@@ -172,26 +172,34 @@ export const socket = {
                             errors.failedparse(peer);
                             return;
                         }
-
                         if (!peers[peer.id].identity) {
                             errors.permissiondenied(peer);
                             return;
                         }
-
-                        // @ts-ignore
-                        let newmessage = (await db.insert(table).values({
-                            id: crypto.randomUUID(),
-                            type: 'message',
-                            content,
-                            image,
-                            replyTo: replyTo || null,
-                            username: peers[peer.id].identity.username,
-                            authorId: peers[peer.id].identity.id,
-                            sentByGuest: peers[peer.id].identity.isGuest
-                        }).returning())[0]
+                        let newmessage;
+                        try {
+                            // @ts-ignore
+                            newmessage = (await db.insert(table).values({
+                                id: crypto.randomUUID(),
+                                type: 'message',
+                                content,
+                                image,
+                                replyTo: replyTo || null,
+                                username: peers[peer.id].identity.username,
+                                authorId: peers[peer.id].identity.id,
+                                sentByGuest: peers[peer.id].identity.isGuest
+                            }).returning())[0]
+                        } catch (e) {
+                            console.error("Failed to insert message:", e);
+                            sendPeer(peer, {
+                                sub: "error",
+                                type: "message_failed",
+                                errors: ++peers[peer.id].errors
+                            })
+                            return;
+                        }
                         // @ts-ignore
                         newmessage.authorImage = peers[peer.id].identity.image || `https://api.dicebear.com/5.x/initials/jpg?seed=${peers[peer.id].identity.username}`;
-
                         sendBroadcast(peers[peer.id].address, {
                             sub: "data",
                             type: "message_send",
