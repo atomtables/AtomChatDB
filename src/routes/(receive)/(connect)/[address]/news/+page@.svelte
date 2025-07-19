@@ -145,6 +145,10 @@
 
 <svelte:window onbeforeunload={exitIfDraft}></svelte:window>
 
+<svelte:head>
+    <title>News: {data.slugs.address} | AtomChatDB</title>
+</svelte:head>
+
 <div >
     <div class="absolute inset-0 -z-50 bg-[#242424]">
         <div class="absolute inset-0 bg-[url('/background/wave8.svg')] bg-cover bg-center wave-animation [animation-duration:6s] -z-42"></div>

@@ -1,8 +1,12 @@
 <script>
 	import '../app.css';
 	
-	let { children } = $props();
+	let { children, data } = $props();
 </script>
+
+<svelte:head>
+    <title>{data.slugs.address ?? ""} {data.slugs.address ? '|' : ''} AtomChatDB</title>
+</svelte:head>
 
 <div>
     <div class="absolute inset-0 -z-50 bg-[#242424]">

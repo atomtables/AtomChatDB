@@ -186,7 +186,9 @@
     };
 </script>
 
-<svelte:window></svelte:window>
+<svelte:head>
+    <title>Chat: {data.slugs.address} | AtomChatDB</title>
+</svelte:head>
 
 <main class="">
     <div class="flex flex-row justify-between items-center p-2 max-w-3xl mx-auto">
