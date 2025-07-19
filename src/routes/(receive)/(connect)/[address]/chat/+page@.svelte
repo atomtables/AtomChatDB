@@ -7,6 +7,7 @@
 
     let ws = $state();
     let state = $state({});
+    let messageError = $state();
     let error = $state(null);
     let textarea = $state();
 
@@ -102,6 +103,9 @@
                     error = "You have been disconnected because you logged in from another device or browser. Please refresh the page to reconnect.";
                 else if (msg.type === 'internal')
                     error = "An internal error occurred. Please try again later.";
+                else if (msg.type === 'message_error') {
+                    messageError = "A server error occurred while sending your message. Please try again later.";
+                }
                 else {
                     console.log("Unknown error type:", msg.type, msg.data);
                     alert("A " + msg.type + " error occurred.")
@@ -276,22 +280,27 @@
                                     ↪ replying to <b>{toSendReply.username}</b>: {toSendReply.content.slice(0, 35)}{toSendReply.content.length > 35 ? '...' : ''}
                                 </div>
                             {/if}
+                            {#if messageError}
+                                <div class="text-red-500 text-sm ml-2 truncate">
+                                    {messageError}
+                                </div>
+                            {/if}
                         </div>
                         {#each state.messages as message, ind (message.id)}
                             {@const sentToday = new Date(message.createdAt).toDateString() === new Date().toDateString()}
                             {@const sameAuthor = state.messages[ind-1]?.authorId === message.authorId}
                             {@const diffDays = new Date(message.createdAt).toDateString() !== new Date(state.messages[ind - 1]?.createdAt).toDateString()}
                             {@const tenMinutes = Math.abs(new Date(message.createdAt) - new Date(state.messages[ind - 1]?.createdAt)) <= 10 * 60 * 1000}
-                            {#if ind > 0 && diffDays}
-                                <div class="mt-2  text-center flex items-center space-x-2 px-2 before:content-[''] before:flex-[1] before:border-b-1 before:border-neutral-500 after:content-[''] after:flex-[1] after:border-b-1 after:border-neutral-500">
-                                    {#if sentToday}
-                                        Today
-                                    {:else}
-                                        {new Date(message.createdAt).toLocaleDateString()}
-                                    {/if}
-                                </div>
-                            {/if}
                             {#if !message.deleted}
+                                {#if (ind > 0 && diffDays) || (ind === 0 && !sentToday)}
+                                    <div class="mt-2  text-center flex items-center space-x-2 px-2 before:content-[''] before:flex-[1] before:border-b-1 before:border-neutral-500 after:content-[''] after:flex-[1] after:border-b-1 after:border-neutral-500">
+                                        {#if sentToday}
+                                            Today
+                                        {:else}
+                                            {new Date(message.createdAt).toLocaleDateString()}
+                                        {/if}
+                                    </div>
+                                {/if}
                                 <div id={message.id} class="target:border-l-2 group relative flex flex-col {!(ind > 0 && sameAuthor && tenMinutes) && 'mt-2 pt-0.5'} px-2 hover:backdrop-blur-3xl">
                                     {#if !(ind > 0 && sameAuthor && tenMinutes)}
                                         <div class="flex flex-row items-center space-x-2 pb-1">
@@ -306,7 +315,7 @@
                                         <div class="">
                                             <p>{message.content}</p>
                                             {#if message.image}
-                                                <img src="/public/images/{message.username}.jpg" alt="Image Message" class="max-w-50 mt-2 mb-2 h-auto rounded-lg">
+                                                <img src="/public/images/{message.image}.jpg" alt="Image Message" class="max-w-96 mt-2 mb-2 h-auto rounded-lg">
                                             {/if}
                                         </div>
                                     </div>
