@@ -38,6 +38,7 @@
             if (event.data === '.') {
                 const nextfocus = Array.from(document.querySelectorAll("input.x1"))
                 nextfocus[nextfocus.indexOf(document.activeElement) + 1].focus();
+                nextfocus[nextfocus.indexOf(document.activeElement)].select();
             }
         }
 
