@@ -31,7 +31,7 @@
             {#if post.image}
                 <img src={`/public/images/${post.image}.jpg`} alt="Post image" class="max-h-96 object-contain my-2" />
             {/if}
-            <pre class="whitespace pre-wrap break-words">{@html post.content}</pre>
+            <pre class="whitespace-break-spaces pre-wrap break-words">{@html post.content}</pre>
         {/if}
     </div>
     {#if post.authorId === user.id && !user.isGuest && !post.deleted}
