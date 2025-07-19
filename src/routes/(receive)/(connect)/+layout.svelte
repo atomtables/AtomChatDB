@@ -145,10 +145,10 @@
             title="go to address">
         →
     </button>
-    <button class="bg-neutral-800/10 h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 my-2 cursor-pointer"
-            title="help">
+    <a class="bg-neutral-800/10 h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 my-2 cursor-pointer flex flex-row items-center justify-center"
+            title="help" href="/help">
         ?
-    </button>
+    </a>
 </div>
 {#if everythingIsValid && data.address}
     <div class="text-sm animate-pulse">click again to connect</div>
