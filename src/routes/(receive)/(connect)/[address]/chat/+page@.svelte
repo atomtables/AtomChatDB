@@ -2,11 +2,14 @@
     import { slide } from "svelte/transition";
     import {onDestroy, onMount} from "svelte";
     import {goto} from "$app/navigation";
+    import {alert} from "$lib/Dialog.svelte";
+    import {preventDefault} from "$lib/utils.js";
 
     let { data } = $props();
 
     let ws = $state();
     let state = $state({});
+    let messageSending = $state(false);
     let messageError = $state();
     let error = $state(null);
     let textarea = $state();
@@ -125,10 +128,9 @@
 
     let toSendMessage = $state();
     let toProcessImage = $state();
-    const fiximagefile = async event => {
+    const fiximagefile = async () => {
         try {
-            console.log(toProcessImage, event.target.files[0]);
-            let file = event.target.files[0];
+            let file = toProcessImage[0];
             if (!file || !file.type.startsWith('image/')) {
                 toProcessImage = null;
                 return;
@@ -140,10 +142,9 @@
                 body: formdata, // Browser will automatically set the correct Content-Type with boundary
                 duplex: 'half'
             })).text();
-            console.log(toSendImage);
         } catch (e) {
             console.error("Failed to process image:", e);
-            alert(`Failed to process image. ${e.message}`);
+            alert(`Image upload failed`, "Failed to process image. " + e.message).then(() => null);
             toProcessImage = null;
             toSendImage = null;
         }
@@ -151,13 +152,8 @@
     let toSendImage = $state();
     let toSendReply = $state();
     const sendMessage = async () => {
-        await new Promise(resolve => {
-            setInterval(() => {
-                if (!toProcessImage || toSendImage) {
-                    resolve();
-                }
-            }, 100);
-        })
+        messageSending = true;
+        if (toProcessImage?.[0]) await fiximagefile();
         await ws.send(JSON.stringify({
             sub: 'data',
             type: 'message_send',
@@ -171,6 +167,7 @@
         toSendImage = null;
         toProcessImage = null;
         toSendReply = null;
+        messageSending = false;
     }
 
     const messageReferringTo = id => {
@@ -208,6 +205,9 @@
                         <span class="text-sm text-neutral-400 animate-pulse">connecting...</span>
                     {:else}
                         <span>{state?.users?.length || 0} other users</span>
+                        {#if messageSending}
+                            <span class="text-sm text-neutral-400 animate-pulse">sending...</span>
+                        {/if}
                     {/if}
                 </div>
                 <div class="flex flex-row space-x-2">
@@ -256,7 +256,7 @@
                     </div>
                     <div class="px-2 h-full flex space-y-0 flex-col grow overflow-y-scroll">
                         <div class="flex flex-col">
-                            <div class="flex flex-row space-x-2">
+                            <form class="flex flex-row space-x-2" onsubmit={preventDefault(() => null)}>
                                 <input type="text" placeholder={'"text" your friends here'}
                                           class="h-14 x1 text-left w-full" bind:value={toSendMessage}>
                                 <button
@@ -270,11 +270,11 @@
                                 <!--                            </button>-->
                                 <div class="flex items-centerbg-neutral-800/10 h-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 cursor-pointer">
                                     <label for="fileInput" class="flex flex-row items-center">
-                                        <span>+</span> <span>{toSendImage ? 'uploaded' : toProcessImage ? 'uploading' : 'image'}</span>
+                                        <span>+</span> <span>{toSendImage ? 'uploaded' : toProcessImage ? 'ready' : 'image'}</span>
                                     </label>
-                                    <input bind:value={toProcessImage} onchange={fiximagefile} id="fileInput" type="file" class="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer" />
+                                    <input bind:files={toProcessImage} id="fileInput" type="file" class="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer" />
                                 </div>
-                            </div>
+                            </form>
                             {#if toSendReply}
                                 <div class="text-neutral-300 text-sm ml-2 truncate hover:underline">
                                     ↪ replying to <b>{toSendReply.username}</b>: {toSendReply.content.slice(0, 35)}{toSendReply.content.length > 35 ? '...' : ''}
