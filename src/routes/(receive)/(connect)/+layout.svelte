@@ -1,6 +1,7 @@
 <script>
     import {onMount} from "svelte";
     import {afterNavigate, goto, invalidate} from "$app/navigation";
+    import {preventDefault} from "$lib/utils";
 
     let { data, children } = $props();
 
@@ -123,7 +124,7 @@
     </div>
 {/if}
 
-<div class="flex flex-row space-x-2">
+<form class="flex flex-row space-x-2" onsubmit={preventDefault(() => everythingIsValid && data.address ? goAllTheWay() : goToAddress())}>
     <div class="bg-neutral-800/10 p-2 my-2 flex flex-row items-end space-x-1 h-14 backdrop-blur-3xl">
         <input type="text" bind:value={domain} id="domain" placeholder="domain" class="x1" oninput={resizeInput}
                tabindex="0" size="8">
@@ -152,7 +153,7 @@
             title="help" href="/help">
         ?
     </a>
-</div>
+</form>
 {#if everythingIsValid && data.address}
     <div class="text-sm animate-pulse">click again to connect</div>
 {/if}
