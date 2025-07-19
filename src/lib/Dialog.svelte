@@ -128,6 +128,7 @@
 <script>
     import {fade} from "svelte/transition";
     import {quadInOut} from "svelte/easing";
+    import {enhance} from "$app/forms";
 
     let {open, title, description, actions, children, form} = $props();
     const closeF = () => open = false;
@@ -155,7 +156,7 @@
                 {#each actions as {name, action, primary, close, submit}}
                     <button
                             class="{primary && 'border-2 border-neutral-500'} cursor-pointer px-4 py-2 text-white bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500"
-                            onclick={!close ? action : async () => { await action?.(); closeF(); }}
+                            onclick={!(close || submit) ? action : async () => { await action?.(); closeF(); }}
                             type="{submit ? 'submit' : 'button'}">
                         {name}
                     </button>
@@ -167,7 +168,7 @@
 
 {#if open}
     {#if form}
-        <form method="POST" action="{form}">
+        <form method="POST" action="{form}" use:enhance>
             <div>
                 {@render action()}
             </div>
