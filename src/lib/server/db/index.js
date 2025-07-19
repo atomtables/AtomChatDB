@@ -32,7 +32,7 @@ export function groupaddr(address) {
 
         title: text('title'), // the title of the post (null for chatgroup)
         content: varchar('content', { length: 1999 }).notNull(),
-        replyTo: text('replyTo').references(() => groupTemplate.id), // the ID of the post this is replying to
+        replyTo: text('replyTo').references(() => table.id), // the ID of the post this is replying to
         image: text('imageId'), // an image file encoded base64
 
         username: text('username').notNull(), // this way there's an easy way to access simple metadata
