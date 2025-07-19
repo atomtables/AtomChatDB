@@ -77,6 +77,24 @@
 
         await goto(url);
     }
+
+    async function goAllTheWay() {
+        let url = "/";
+        if (domain) {
+            url += domain;
+        }
+        if (class_) {
+            url += `.${class_}`;
+        }
+        if (focus) {
+            url += `.${focus}`;
+        }
+        if (topic) {
+            url += `.${topic}`;
+        }
+        url += `/${data.address.type}`
+        await goto(url);
+    }
 </script>
 
 
@@ -122,8 +140,8 @@
         <input type="text" bind:value={topic} id="topic" placeholder="topic" class="x1" oninput={resizeInput}
                tabindex="0" size="8">
     </div>
-    <button onclick={() => goToAddress()}
-            class="bg-neutral-800/10 transition-colors {everythingIsValid && '!bg-green-700'} h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 my-2 cursor-pointer"
+    <button onclick={() => everythingIsValid && data.address ? goAllTheWay() : goToAddress()}
+            class="block bg-neutral-800/10 transition-colors {everythingIsValid && '!bg-green-700'} h-14 w-14 backdrop-blur-3xl hover:bg-neutral-700 active:bg-neutral-600 p-2 my-2 cursor-pointer"
             title="go to address">
         →
     </button>
@@ -132,5 +150,7 @@
         ?
     </button>
 </div>
-
+{#if everythingIsValid && data.address}
+    <div class="text-sm animate-pulse">click again to connect</div>
+{/if}
 {@render children()}

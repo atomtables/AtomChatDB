@@ -18,10 +18,7 @@
             <div class="flex flex-row justify-center items-center space-x-2">
                 <span><b>{data.address.type === 'news' ? 'newsgroup' : 'chatroom' }</b> created by <b>{data.address.createdBy}</b> on {data.address.createdAt.toLocaleDateString()}</span>
             </div>
-            <span class="max-w-xl text-center text-sm">{data.address.description}</span>
-            <button class="cursor-pointer disabled:cursor-not-allowed disabled:text-neutral-500 hover:bg-neutral-500/50 active:bg-neutral-600/50 font-bold p-1 mt-2 border-2 border-neutral-500"
-                    disabled={!data.auth} onclick={() => goto(`/${data.address.address}/${data.address.type === 'news' ? 'news' : 'chat'}`)}>initiate connection {!data.auth ? '(log in first)' : ''}
-            </button>
+            <span class="max-w-xl max-h-48 overflow-y-scroll text-center"><i>Description:</i> {data.address.description}</span>
         </div>
     {:else}
         <div class="flex flex-col">
