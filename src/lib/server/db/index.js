@@ -4,6 +4,7 @@ import * as schema from './schema.js';
 import {env} from '$env/dynamic/private';
 import {lt, sql} from "drizzle-orm";
 import {boolean, pgTable, text, timestamp, uuid, varchar} from "drizzle-orm/pg-core";
+import {analytics} from "$lib/server/stores.svelte.ts";
 
 if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
 
@@ -17,6 +18,12 @@ setInterval(() => {
     db.delete(schema.guest)
         .where(lt(schema.guest.expiresAt, sql`NOW()`))
 }, 5000000)
+
+setInterval(() => {
+    Object.keys(analytics).forEach((address) => {
+        analytics[address] = new Set();
+    })
+}, 86400000)
 
 export function groupaddr(address) {
     let table = pgTable(`address_${address}`, {
