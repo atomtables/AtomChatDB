@@ -1,0 +1,1 @@
+export let analytics: { [id: string]: Set<string> } = $state({})
