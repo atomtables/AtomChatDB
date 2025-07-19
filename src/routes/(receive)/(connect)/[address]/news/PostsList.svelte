@@ -16,8 +16,8 @@
             <span class="text-lg font-bold">{draft.title[0]}</span>
         </span>
         <span class="flex flex-col items-start grow-0">
-            <span class="font-bold overflow-ellipsis shrink">{draft.title.slice(0, 32)}... <span class="text-red-500">(draft)</span></span>
-            <span class="text-sm text-neutral-400 overflow-ellipsis line-clamp-1">{draft.content.slice(0, 45)}...</span>
+            <span class="font-bold overflow-ellipsis shrink">{draft.title.slice(0, 28)}{draft.title.length > 28 ? '...' : ''} <span class="text-red-500">(draft)</span></span>
+            <span class="text-sm text-neutral-400 overflow-ellipsis line-clamp-1">{draft.content.slice(0, 50)}{draft.content.length > 50 ? '...' : ''}</span>
         </span>
     </button>
 {/each}
@@ -31,8 +31,8 @@
         <span class="text-lg font-bold">{post.title[0]}</span>
         </span>
         <span class="flex flex-col items-start grow-0">
-        <span class="font-bold">{post.title.slice(0, 32)}...</span>
-        <span class="text-sm text-neutral-400 overflow-ellipsis line-clamp-1 ">{post.content.slice(0, 45)}...</span>
+        <span class="font-bold">{post.title.slice(0, 32)}{post.title.length > 32 ? '...' : ''}</span>
+        <span class="text-sm text-neutral-400 overflow-ellipsis line-clamp-1 ">{post.content.slice(0, 50)}{post.content.length > 50 ? '...' : ''}</span>
         </span>
     </button>
 {/each}
