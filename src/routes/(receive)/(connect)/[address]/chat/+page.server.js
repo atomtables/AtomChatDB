@@ -2,7 +2,7 @@ import {db} from "$lib/server/db/index.js";
 import * as table from "$lib/server/db/schema.js";
 import {eq} from "drizzle-orm";
 import {error} from "@sveltejs/kit";
-import {analytics} from "$lib/stores.svelte.ts";
+import {analytics} from "$lib/server/stores.svelte.ts";
 
 export const load = async ({ locals, params, fetch }) => {
     if (!locals.user || !locals.session) {
