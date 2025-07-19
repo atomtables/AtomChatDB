@@ -154,7 +154,10 @@
         ?
     </a>
 </form>
-{#if everythingIsValid && data.address}
+{#if everythingIsValid && data.address && data.user}
     <div class="text-sm animate-pulse">click again to connect</div>
+{/if}
+{#if everythingIsValid && data.address && !data.user}
+    <div class="text-sm">log in above to connect</div>
 {/if}
 {@render children()}
