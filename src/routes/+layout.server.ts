@@ -1,6 +1,7 @@
 import * as table from "$lib/server/db/schema";
 import {eq} from "drizzle-orm";
 import {db} from "$lib/server/db/index.js";
+import {analytics} from "$lib/server/stores.svelte";
 
 export const load = async ({ locals, params }) => {
     let user = locals.user;
@@ -33,8 +34,9 @@ export const load = async ({ locals, params }) => {
         user: user,
         session: locals.session,
         address,
+        analytics: analytics,
         slugs: {
-            // surprisingly this works lmao
+            address: params.address || null,
             domain: values?.[0] || null,
             class: values?.[1] || null,
             focus: values?.[2] || null,

@@ -4,6 +4,7 @@ import * as auth from "$lib/server/auth.js";
 import {invalidateGuestSession, invalidateSession, validateSessionToken} from "$lib/server/auth.js";
 import {error, fail} from "@sveltejs/kit";
 import * as table from "$lib/server/db/schema.ts";
+import {analytics} from "$lib/server/stores.svelte.ts";
 
 export const load = async ({ locals, params, fetch }) => {
     if (!locals.user || !locals.session) {
@@ -13,6 +14,9 @@ export const load = async ({ locals, params, fetch }) => {
     if ((await db.select().from(table.groups).where(eq(table.groups.address, params.address)))?.[0]?.type !== 'news') {
         return error(404, { message: 'This address does not exist or is not a news group.' });
     }
+
+    analytics[params.address] = analytics[params.address] || new Set();
+    analytics[params.address].add(locals.user.id);
 
     return {
         data: (await (await fetch(`/${params.address}/news/post`, { method: 'GET' })).json()).posts
