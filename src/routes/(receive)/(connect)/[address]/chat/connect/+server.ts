@@ -32,7 +32,7 @@ type User = {
     person: string
     username: string
     isGuest: boolean
-    image?: string
+    image?: boolean
 }
 type PeerProperty = [PeerStatus, PeerWaiting, Timeout | null, Interval | null]
 interface PeerData {
@@ -150,10 +150,6 @@ export const socket = {
                             .map(([_, p]) => p.identity)
                             .filter(u => u !== null)
                             .filter(u => u.id !== peers[peer.id].identity.id)
-                            .map(u => {
-                                if (!u.image) u.image = `https://api.dicebear.com/5.x/initials/jpg?seed=${u.username}`;
-                                return u
-                            })
                             .filter(u => u !== null && u.id !== null);
                         peer.send(JSON.stringify({
                             sub: "data",
@@ -172,7 +168,7 @@ export const socket = {
                         } = message.data;
                         if (!content || typeof content !== 'string' || content.length > 1999) { errors.failedparse(peer); return; }
 
-                        if (image && !fs.existsSync(`public/images/${image}.jpg`)) {
+                        if (image && !fs.existsSync(`static/public/images/${image}.jpg`)) {
                             errors.failedparse(peer);
                             return;
                         }
@@ -329,7 +325,6 @@ const verify = async (peer: Peer, message: any) => {
         timeout = null;
 
         sendPeer(peer, {sub: 'verify', type: 'accepted', data: {version: 1.0, ping: 30}})
-        if (!peers[peer.id].identity.image) peers[peer.id].identity.image = `https://api.dicebear.com/5.x/initials/jpg?seed=${peers[peer.id].identity.username}`;
         if (!peers[peer.id].broadcasted)
             sendBroadcast(peers[peer.id].address, {
                 sub: "data",
