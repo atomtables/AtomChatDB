@@ -3,6 +3,7 @@ import {and, desc, eq} from "drizzle-orm";
 import {fail} from "@sveltejs/kit";
 import {invalidateGuestSession, invalidateSession, validateSessionToken} from "$lib/server/auth.js";
 import * as auth from "$lib/server/auth.js";
+import creatorbot from "$lib/server/creatorbot.js";
 
 export const GET = async ({ url, params }) => {
     let table = groupaddr(params.address);
@@ -72,8 +73,6 @@ export const POST = async (event) => {
         return fail(400, { message: 'Content must be between 3 and 5000 characters' });
     }
 
-    console.log(content);
-
     const table = groupaddr(address);
     const postId = crypto.randomUUID()
     await db.insert(table).values({
@@ -86,6 +85,8 @@ export const POST = async (event) => {
         authorId: event.locals.user.id,
         sentByGuest: event.locals.user.isGuest,
     });
+
+    if (address === 'news.groups.proposals') await creatorbot(postId)
 
     return new Response(JSON.stringify({
         post: postId
