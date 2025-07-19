@@ -1,4 +1,6 @@
 <script>
+    import {goto} from "$app/navigation";
+
     let { form } = $props();
 </script>
 
@@ -23,6 +25,7 @@
         >
             submit
         </button>
+        <button onclick={() => goto('/')} class="p-2 mb-2 cursor-pointer">back</button>
     </div>
 
 </form>
