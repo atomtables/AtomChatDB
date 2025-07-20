@@ -78,6 +78,7 @@ export const socket = {
         if (server.type !== 'chat') {
             return error(404, {message: 'This address is not a chat server'});
         }
+        console.log(`client attempted upgrade to ${addr}`);
         return {};
     },
     async open(peer: Peer) {
