@@ -78,6 +78,7 @@ export const socket = {
         if (server.type !== 'chat') {
             return error(404, {message: 'This address is not a chat server'});
         }
+        return {};
     },
     async open(peer: Peer) {
         console.log(`${peer.id.slice(0, 8)} => ${getPeerAddress(peer)}`);
