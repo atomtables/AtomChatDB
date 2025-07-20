@@ -8,7 +8,6 @@ import {generateSessionToken} from "$lib/server/auth.js";
 
 export const actions = {
     default: async (event) => {
-        console.log(event.getClientAddress())
         const formData = await event.request.formData();
         const username = formData.get('username');
 

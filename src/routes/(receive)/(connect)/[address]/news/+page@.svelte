@@ -125,7 +125,6 @@
             })
             .then(data => {
                 let draft = posts[ind]?.replies?.filter(p => p.id.startsWith("draft")) || [];
-                console.log("im here...", data.replies, draft)
                 posts[ind].replies = [...data.replies, ...draft];
                 isLoadingPosts = false;
             })

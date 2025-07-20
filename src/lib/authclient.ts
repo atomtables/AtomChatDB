@@ -1,7 +1,7 @@
 import {encodeBase32LowerCase} from "@oslojs/encoding";
 import {fail, redirect} from "@sveltejs/kit";
 import {db} from "$lib/server/db/index.js";
-import * as table from "$lib/server/db/schema.ts";
+import * as table from "$lib/server/db/schema";
 import {eq} from "drizzle-orm";
 import * as auth from "$lib/server/auth.js";
 import {getRequestEvent} from "$app/server";
@@ -30,7 +30,6 @@ export function validateIdentifier(identifier: string, email: boolean) {
             /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(identifier)
         );
     } else {
-        console.log(identifier.replace(/[^+|0-9]/gm, ''));
         // phone number with country code and must start with +1
         return (
             typeof identifier === 'string' &&

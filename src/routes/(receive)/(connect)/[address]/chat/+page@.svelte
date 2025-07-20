@@ -28,8 +28,6 @@
     })
 
     onMount(() => {
-        console.log(data.session.id);
-
         connect()
 
         return () => {

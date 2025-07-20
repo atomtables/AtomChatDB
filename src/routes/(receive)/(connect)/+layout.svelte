@@ -43,8 +43,6 @@
             }
         }
 
-        console.log()
-
         input.size = input.value.length || 8; // prevent size=0
     }
 
