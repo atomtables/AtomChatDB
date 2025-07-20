@@ -16,7 +16,7 @@ export const POST = async ({ locals, request }) => {
     await sharp(buffer)
         .resize({width: 1200, withoutEnlargement: true})
         .jpeg({quality: 60})
-        .toFile(`static/public/images/${photoId}.jpg`);
+        .toFile(`public/images/${photoId}.jpg`);
 
     return new Response(photoId);
 }

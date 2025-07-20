@@ -7,7 +7,15 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	resolve: {
 		alias: {
-			'$fonts': resolve("./static/fonts")
+			'$fonts': resolve("./static/fonts"),
 		}
-	}
+	},
+	server: {
+		fs: {
+			strict: false,
+			allow: [
+				"/public"
+			]
+		}
+	},
 });

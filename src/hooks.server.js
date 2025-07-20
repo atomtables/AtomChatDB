@@ -41,18 +41,12 @@ export const handle = async ({ event, resolve }) => {
 	event.locals.user = users;
 	event.locals.session = sessions;
 
-	// if loading a DP from /public/dp and dp does not exist, get DP from a https://api.dicebear.com/5.x/initials/jpg?seed={data.user.username}
-	if (event.url.pathname.startsWith('/public/dp/') && !fs.existsSync(`static/${event.url.pathname}`)) {
-		const dpUrl = `https://api.dicebear.com/5.x/initials/jpg?seed=${event.url.pathname.split('/')[2]}`;
-		return await fetch(dpUrl)
-	}
-
 	return resolve(event);
 };
 
 export const init = async () => {
-	fs.mkdirSync("static/public/dp", { recursive: true });
-	fs.mkdirSync("static/public/images", { recursive: true });
+	fs.mkdirSync("public/dp", { recursive: true });
+	fs.mkdirSync("public/images", { recursive: true });
 
 	try { await db.execute(`insert into groups values ('news.groups.proposals', 'internalsystem', '1970-01-01', 'The place to insert new proposals to create new groups. It is recommended that you use the "request creation" dialogue to submit a request. You can view and reply to other proposals, seeing which ones were rejected and accepted.', 'news') on conflict do nothing`); } catch (e) { console.log("existing group:", e.message) }
 	try { await db.execute(`CREATE TABLE IF NOT EXISTS "address_news.groups.proposals" (LIKE "group_template" INCLUDING ALL)`) } catch (e) { console.log(e.message); }

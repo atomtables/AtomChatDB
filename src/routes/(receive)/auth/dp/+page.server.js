@@ -23,7 +23,7 @@ export const actions = {
         await sharp(buffer)
             .resize({width: 256})
             .jpeg({quality: 70})
-            .toFile(`static/public/dp/${locals.user.username}.jpg`);
+            .toFile(`public/dp/${locals.user.username}.jpg`);
 
         await db.update(table.user)
             .set({ image: true })

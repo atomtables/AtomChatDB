@@ -168,7 +168,7 @@ export const socket = {
                         } = message.data;
                         if (!content || typeof content !== 'string' || content.length > 1999) { errors.failedparse(peer); return; }
 
-                        if (image && !fs.existsSync(`static/public/images/${image}.jpg`)) {
+                        if (image && !fs.existsSync(`public/images/${image}.jpg`)) {
                             errors.failedparse(peer);
                             return;
                         }
