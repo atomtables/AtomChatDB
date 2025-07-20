@@ -89,14 +89,15 @@
 
                     <div class="px-6 pb-4 pt-4 flex justify-end gap-2">
                         <button
-                                class="border-2 border-neutral-500 cursor-pointer px-4 py-2 text-white bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500"
-                                onclick={() => {}}
-                                type="submit">
+                            class="border-2 border-neutral-500 cursor-pointer px-4 py-2 text-white bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500"
+                            onclick={() => {}}
+                            type="submit">
                             submit
                         </button>
                         <button
-                                class="cursor-pointer px-4 py-2 text-white bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500"
-                                onclick={() => openForm = false}>
+                            class="cursor-pointer px-4 py-2 text-white bg-neutral-700 hover:bg-neutral-600 active:bg-neutral-500"
+                            onclick={() => openForm = false}
+                            type="button">
                             close
                         </button>
                     </div>
