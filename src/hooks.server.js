@@ -2,7 +2,6 @@ import * as auth from '$lib/server/auth';
 import * as fs from "node:fs";
 import {db} from "$lib/server/db/index.js";
 
-
 export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	const ipAddress = event.getClientAddress();
