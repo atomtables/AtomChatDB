@@ -11,6 +11,6 @@ export const GET = async ({ params }) => {
         const file = await fs.readFile(pathName)
         return new Response(file)
     } catch {
-        return redirect(302, `https://api.dicebear.com/5.x/initials/jpg?seed=${params.path}`)
+        return redirect(302, `https://api.dicebear.com/5.x/initials/jpg?seed=${params.path.replace(".jpg", "")}`)
     }
 }
