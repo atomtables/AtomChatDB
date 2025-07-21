@@ -6,12 +6,13 @@ import {type RequestEvent} from "@sveltejs/kit";
 export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	const ipAddress = event.getClientAddress();
-
 	event.setHeaders({
 		"Access-Control-Allow-Origin": "https://chat.atomtables.dev",
 		"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
 		"Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
 	})
+
+	console.log(`Request from IP: ${ipAddress}, Session Token: ${sessionToken}`, event);
 
 	if (!sessionToken) {
 		event.locals.user = null;
