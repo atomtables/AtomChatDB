@@ -6,11 +6,12 @@ import {type RequestEvent} from "@sveltejs/kit";
 export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	const ipAddress = event.getClientAddress();
-	event.setHeaders({
-		"Access-Control-Allow-Origin": "https://chat.atomtables.dev",
-		"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-		"Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
-	})
+
+	let e = event as RequestEvent;
+	e.request.headers.set("Access-Control-Allow-Origin", "https://chat.atomtables.dev");
+	e.request.headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+	e.request.headers.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+	e.request.headers.set("Access-Control-Allow-Credentials", "true");
 
 	console.log(`Request from IP: ${ipAddress}, Session Token: ${sessionToken}`, event);
 
@@ -48,7 +49,12 @@ export const handle = async ({ event, resolve }) => {
 	event.locals.user = users;
 	event.locals.session = sessions;
 
-	return resolve(event);
+	let response = resolve(event);
+	response.headers.set("Access-Control-Allow-Origin", "https://chat.atomtables.dev");
+	response.headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+	response.headers.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+	response.headers.set("Access-Control-Allow-Credentials", "true");
+	return response;
 };
 
 export const init = async () => {
