@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>test web socket</h1>
+<h2>look in net dev panel</h2>
+
+<script defer>
+	function reconnect() {
+    	var socket = new WebSocket("wss://chat.atomtables.dev/hackclub.demo.chat/chat/connect");
+        socket.onmessage = message => {
+        console.log(message);
+        	document.getElementById("sad").innerText = message;
+        };
+    }
+    reconnect();
+</script>
+
+<div id="sad">
+</div>
+
+</body>
+</html>
