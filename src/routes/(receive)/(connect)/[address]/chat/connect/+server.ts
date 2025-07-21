@@ -318,7 +318,7 @@ const verify = async (peer: Peer, message: any) => {
             return;
         }
 
-        let [existingSession] = Object.values(peers).filter(p => p.identity && p.identity.id === user.id);
+        let [existingSession] = Object.values(peers).filter(p => p.identity && p.identity.id === user.id && p.peer.id !== peer.id);
         if (existingSession) {
             console.warn(`Peer ${peer.id} tried to connect with an already connected user ${user.username} (${user.id})`);
             sendPeer(existingSession.peer, {
