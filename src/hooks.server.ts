@@ -7,12 +7,6 @@ export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	const ipAddress = event.getClientAddress();
 
-	let e = event as RequestEvent;
-	e.request.headers.set("Access-Control-Allow-Origin", "https://chat.atomtables.dev");
-	e.request.headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-	e.request.headers.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-	e.request.headers.set("Access-Control-Allow-Credentials", "true");
-
 	console.log(`Request from IP: ${ipAddress}, Session Token: ${sessionToken}`, event);
 
 	if (!sessionToken) {
@@ -49,11 +43,7 @@ export const handle = async ({ event, resolve }) => {
 	event.locals.user = users;
 	event.locals.session = sessions;
 
-	let response = resolve(event);
-	response.headers.set("Access-Control-Allow-Origin", "https://chat.atomtables.dev");
-	response.headers.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-	response.headers.set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-	response.headers.set("Access-Control-Allow-Credentials", "true");
+	let response: Response = resolve(event);
 	return response;
 };
 
