@@ -1,10 +1,17 @@
 import * as auth from '$lib/server/auth';
 import * as fs from "node:fs";
 import {db} from "$lib/server/db/index.js";
+import {type RequestEvent} from "@sveltejs/kit";
 
 export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	const ipAddress = event.getClientAddress();
+
+	event.setHeaders({
+		"Access-Control-Allow-Origin": "https://chat.atomtables.dev",
+		"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+		"Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
+	})
 
 	if (!sessionToken) {
 		event.locals.user = null;
