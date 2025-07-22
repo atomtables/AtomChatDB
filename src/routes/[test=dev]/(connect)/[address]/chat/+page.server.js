@@ -15,4 +15,8 @@ export const load = async ({ locals, params, fetch }) => {
 
     analytics[params.address] = analytics[params.address] || new Set();
     analytics[params.address].add(locals.user.id);
+
+    return {
+        socketUrl: await (await fetch(`/${params.address}/chat/url`)).text()
+    }
 }

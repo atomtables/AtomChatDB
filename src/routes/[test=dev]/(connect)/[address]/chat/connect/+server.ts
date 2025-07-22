@@ -16,16 +16,18 @@ import * as fs from "node:fs";
 
 type Timeout = ReturnType<typeof setTimeout>
 type Interval = ReturnType<typeof setInterval>;
-enum PeerStatus {
-    idle,
-    stage1,
-    stage2,
-    stage3
-}
-enum PeerWaiting {
-    Server,
-    Client
-}
+const PeerStatus = {
+    idle: 0,
+    stage1: 1,
+    stage2: 2,
+    stage3: 3,
+} as const;
+type PeerStatus = (typeof PeerStatus)[keyof typeof PeerStatus];
+const PeerWaiting = {
+    Server: 0,
+    Client: 1,
+} as const;
+type PeerWaiting = (typeof PeerWaiting)[keyof typeof PeerWaiting];
 type User = {
     id: string
     birth: Date
