@@ -14,21 +14,6 @@
     let error = $state(null);
     let textarea = $state();
 
-    function getWebSocketUrl(path) {
-        // Determine the protocol based on page protocol (ws for http, wss for https)
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-        // Use the current host to make it work regardless of domain
-        const host = window.location.host;
-
-        // Ensure path starts with a slash
-        if (!path.startsWith('/')) {
-            path = '/' + path;
-        }
-
-        return `${wsProtocol}//${host}${path}`;
-    }
-
     $effect(() => {
         if (textarea) {
             this.style.height = "auto";
@@ -51,7 +36,7 @@
     })
 
     const connect = () => {
-        ws = new WebSocket(getWebSocketUrl(`/${data.address.address}/chat/connect`));
+        ws = new WebSocket(data.socket);
         ws.onopen = () => {
             state = {state: "connected to server, waiting for auth"}
             console.log("WebSocket connection established");

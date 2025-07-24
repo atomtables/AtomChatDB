@@ -1,10 +1,11 @@
-import {db, groupaddr} from "$lib/server/db/index.js";
+import {db} from "$lib/server/db/index.js";
 import {asc, desc, eq} from "drizzle-orm";
 import * as auth from "$lib/server/auth.js";
 import {invalidateGuestSession, invalidateSession, validateSessionToken} from "$lib/server/auth.js";
 import {error, fail} from "@sveltejs/kit";
 import * as table from "$lib/server/db/schema.ts";
 import {analytics} from "$lib/server/stores.svelte.ts";
+import {groupaddr} from "$lib/server/db/schema.ts";
 
 export const load = async ({ locals, params, fetch }) => {
     if (!locals.user || !locals.session) {

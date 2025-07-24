@@ -1,6 +1,4 @@
-import {pgTable, serial, integer, text, timestamp, date, customType, varchar, boolean, uuid} from 'drizzle-orm/pg-core';
-import {encodeBase64NoPadding} from "@oslojs/encoding";
-import {relations} from "drizzle-orm";
+import {boolean, date, pgTable, text, timestamp, varchar} from 'drizzle-orm/pg-core';
 
 export const user = pgTable('users', {
 	id: text('id').primaryKey(),
@@ -82,3 +80,24 @@ export const groups = pgTable('groups', {
 	description: text('description').notNull(),
 	type: text('type').notNull(), // "chat" or "news"
 })
+
+export function groupaddr(address: string) {
+	let table = pgTable(`address_${address}`, {
+		id: text('id').primaryKey(),
+		type: text('type').notNull(), // news: "post" or "reply", chat: "message"
+
+		title: text('title'), // the title of the post (null for chatgroup)
+		content: varchar('content', {length: 1999}).notNull(),
+		replyTo: text('replyTo').references(() => table.id), // the ID of the post this is replying to
+		image: text('imageId'), // an image file encoded base64
+
+		username: text('username').notNull(), // this way there's an easy way to access simple metadata
+		authorId: text('authorId'), // can be null if guest or deleted user
+		sentByGuest: boolean('sentByGuest').default(false).notNull(),
+
+		createdAt: timestamp('createdAt', {mode: 'date', withTimezone: true}).notNull().defaultNow(),
+		// if the post is being deleted for history's sake it should still be in the DB so replies stay alive.
+		deleted: boolean('deleted').default(false).notNull(), // whether the post has been deleted
+	})
+	return table;
+}

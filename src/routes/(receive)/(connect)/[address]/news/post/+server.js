@@ -1,9 +1,10 @@
-import {db, groupaddr} from "$lib/server/db/index.js";
+import {db} from "$lib/server/db/index.js";
 import {and, desc, eq} from "drizzle-orm";
 import {fail} from "@sveltejs/kit";
 import {invalidateGuestSession, invalidateSession, validateSessionToken} from "$lib/server/auth.js";
 import * as auth from "$lib/server/auth.js";
 import creatorbot from "$lib/server/creatorbot.js";
+import {groupaddr} from "$lib/server/db/schema.js";
 
 export const GET = async ({ url, params }) => {
     let table = groupaddr(params.address);

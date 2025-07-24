@@ -3,6 +3,8 @@ import * as table from "$lib/server/db/schema.js";
 import {eq} from "drizzle-orm";
 import {error} from "@sveltejs/kit";
 import {analytics} from "$lib/server/stores.svelte.ts";
+import { dev } from '$app/environment';
+import {env} from "$env/dynamic/private";
 
 export const load = async ({ locals, params, fetch }) => {
     if (!locals.user || !locals.session) {
@@ -15,4 +17,8 @@ export const load = async ({ locals, params, fetch }) => {
 
     analytics[params.address] = analytics[params.address] || new Set();
     analytics[params.address].add(locals.user.id);
+
+    return {
+        socket: dev ? `/${params.address}/chat/connect` : `wss://${env.socket}/${params.address}/chat/connect`
+    }
 }
