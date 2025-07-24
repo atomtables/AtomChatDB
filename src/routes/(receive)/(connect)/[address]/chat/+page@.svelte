@@ -27,12 +27,15 @@
         }
     })
 
+    let end = $state()
+
     onMount(() => {
         connect()
+    })
 
-        return () => {
-            ws.close(1000);
-        }
+    onDestroy(() => {
+        ws?.close(1000);
+        try { clearTimeout(end); } catch {}
     })
 
     const connect = () => {
@@ -116,7 +119,7 @@
         ws.onclose = () => {
             state.connected = false;
             if (!error) {
-                setTimeout(() => {
+                end = setTimeout(() => {
                     connect();
                     state.state = "waiting to reconnect"
                 }, 5000)
