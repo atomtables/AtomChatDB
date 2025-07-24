@@ -20,7 +20,7 @@ export const handle = async ({ event, resolve }) => {
 		let {session, user} = await auth.validateGuestSessionToken(sessionToken);
 		sessions = session
 		users = user
-		if (users.person !== ipAddress) {
+		if (users.person !== users.person) {
 			// If the IP address has changed, invalidate the session
 			try { await auth.invalidateGuestSession(sessionToken); } catch {}
 			sessions = null;
