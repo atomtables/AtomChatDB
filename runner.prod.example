@@ -1,0 +1,2 @@
+#!/bin/bash
+ORIGIN=https://example.com PORT=80 ADDRESS_HEADER=X-Forwarded-For node --env-file=.env build & PORT=22 npx tsx websockets.ts
