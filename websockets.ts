@@ -356,7 +356,8 @@ serve({
                 console.warn(`Peer ${peer.id} disconnected but was not found in peers. were we hacked again jim`);
             }
         },
-    }
+    },
+    fetch: () => new Response("", { status: 204 }),
 })
 
 const sendPeer = (peer: any, data: any) => void(peer.send(JSON.stringify(data)));
