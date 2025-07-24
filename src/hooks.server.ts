@@ -7,7 +7,7 @@ export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	const ipAddress = event.getClientAddress();
 
-	console.log(`Request from IP: ${ipAddress}, Session Token: ${sessionToken}`, event);
+	console.log(`${event.route.id} from IP: ${ipAddress}, Session Token: ${sessionToken}`);
 
 	if (!sessionToken) {
 		event.locals.user = null;
