@@ -3,7 +3,7 @@ import path from "node:path";
 import {error} from "@sveltejs/kit";
 
 export const GET = async ({ params }) => {
-    const pathName = path.resolve("/public/images" , params.path)
+    const pathName = path.resolve("public/images" , params.path)
 
     console.log(pathName);
 
