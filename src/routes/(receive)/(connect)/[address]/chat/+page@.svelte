@@ -152,6 +152,7 @@
             alert(`Image upload failed`, "Failed to process image. " + e.message).then(() => null);
             toProcessImage = null;
             toSendImage = null;
+            throw new Error();
         }
     }
     let toSendImage = $state();
