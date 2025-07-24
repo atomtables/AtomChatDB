@@ -275,7 +275,7 @@
                                     <label for="fileInput" class="flex flex-row items-center">
                                         <span>+</span> <span>{toSendImage ? 'uploaded' : toProcessImage ? 'ready' : 'image'}</span>
                                     </label>
-                                    <input bind:files={toProcessImage} id="fileInput" type="file" class="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer" />
+                                    <input bind:files={toProcessImage} id="fileInput" type="file" accept="image/*" class="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer" />
                                 </div>
                             </form>
                             {#if toSendReply}

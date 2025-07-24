@@ -17,7 +17,7 @@ export const actions = {
 
         try {
             const sessionToken = "guest_" + generateSessionToken();
-            const session = await auth.createGuestSession(username, sessionToken, event.getClientAddress());
+            const session = await auth.createGuestSession(username, sessionToken, sessionToken);
             auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
         } catch (e) {
             console.log(e);
