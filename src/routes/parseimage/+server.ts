@@ -3,7 +3,7 @@ import {error} from "@sveltejs/kit";
 
 export const POST = async ({ locals, request }) => {
     try {
-        if (!locals.user || locals.user.isGuest) {
+        if (!locals.user) {
             return new Response("Unauthorized", { status: 401 });
         }
         const formData = await request.formData();
