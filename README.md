@@ -27,10 +27,18 @@ also the tablet experience has not been tested.
 
 ### How to run (prod):
 - `pnpm run build`
-- create an expressjs server and use the handler generated.
-- buy a postgres server to run the database on
-- also include a file storage service because images get stored in static/public
-- pray to the gods (that's what I did as well)
+- ~~create an expressjs server and use the handler generated.~~
+- `mv .env.example .env`
+- buy a postgres server to run the database on (write that url into .env)
+- also include a file storage service because images get stored in static/public (not implemented)
+- if your reverse proxy does not support websockets over same origin, pipe the websockets server port into another domain (and put that into .env)
+- `mv runner.prod.example runner.prod`
+- modify runner.prod to include your config settings for your environment
+- `pnpm run production`
+- pray to the gods (whichever you believe in if you do) (that's what I did as well)
+
+### .env
+DATABASE_URL and socket
 
 ### people from hack club
 go to news.groups.proposals, hackclub.demo.news, and hackclub.demo.chat to demo the application.
