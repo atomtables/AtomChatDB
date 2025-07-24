@@ -357,7 +357,7 @@ serve({
             }
         },
     },
-    fetch: () => new Response("", { status: 204 }),
+    fetch: () => new Response("", { status: 200 }),
 })
 
 const sendPeer = (peer: any, data: any) => void(peer.send(JSON.stringify(data)));
