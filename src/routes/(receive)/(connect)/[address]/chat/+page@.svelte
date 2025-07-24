@@ -138,11 +138,15 @@
             }
             const formdata = new FormData();
             formdata.append('image', file);
-            toSendImage = await (await fetch("/parseimage", {
+            let res = await fetch("/parseimage", {
                 method: 'POST',
                 body: formdata, // Browser will automatically set the correct Content-Type with boundary
                 duplex: 'half'
-            })).text();
+            })
+            if (!res.ok) {
+                throw new Error(`Failed to process image: ${res.status} ${res.statusText}`);
+            }
+            toSendImage = await res.text();
         } catch (e) {
             console.error("Failed to process image:", e);
             alert(`Image upload failed`, "Failed to process image. " + e.message).then(() => null);
@@ -153,22 +157,28 @@
     let toSendImage = $state();
     let toSendReply = $state();
     const sendMessage = async () => {
-        messageSending = true;
-        if (toProcessImage?.[0]) await fiximagefile();
-        await ws.send(JSON.stringify({
-            sub: 'data',
-            type: 'message_send',
-            data: {
-                content: toSendMessage,
-                image: toSendImage,
-                replyTo: toSendReply?.id,
-            }
-        }));
-        toSendMessage = null;
-        toSendImage = null;
-        toProcessImage = null;
-        toSendReply = null;
-        messageSending = false;
+        try {
+            messageSending = true;
+            if (toProcessImage?.[0]) await fiximagefile();
+            await ws.send(JSON.stringify({
+                sub: 'data',
+                type: 'message_send',
+                data: {
+                    content: toSendMessage,
+                    image: toSendImage,
+                    replyTo: toSendReply?.id,
+                }
+            }));
+            toSendMessage = null;
+            toSendImage = null;
+            toProcessImage = null;
+            toSendReply = null;
+            messageSending = false;
+        } catch (e) {
+            console.error("Failed to send message:", e);
+            messageSending = false;
+            alert("Failed to send message", `Error: ${e.message}`).then(() => null)
+        }
     }
 
     const messageReferringTo = id => {
