@@ -144,7 +144,7 @@
                 duplex: 'half'
             })
             if (!res.ok) {
-                throw new Error(`Failed to process image: ${res.status} ${res.statusText}`);
+                throw new Error(`${res.statusText} ${await res.text()}`);
             }
             toSendImage = await res.text();
         } catch (e) {
