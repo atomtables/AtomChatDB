@@ -3,11 +3,14 @@ import { desc, eq } from "drizzle-orm";
 import * as fs from "node:fs";
 import * as crypto from "node:crypto";
 import {configDotenv} from "dotenv";
+// @ts-ignore
 import * as schema from "./src/lib/server/db/schema.ts";
+// @ts-ignore
 import postgres from "postgres";
 import {drizzle} from "drizzle-orm/postgres-js";
 import {encodeHexLowerCase} from "@oslojs/encoding";
 import {sha256} from "@oslojs/crypto/sha2";
+
 configDotenv();
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
@@ -143,7 +146,7 @@ const errors = {
 // Create CrossWS instance
 serve({
     websocket: {
-        async upgrade(request: RequestEvent) {
+        async upgrade(request: any) {
             let addr = new URL(request.url).pathname.split('/')[1];
             if (!addr) {
                 return new Response(JSON.stringify({message: 'Address is required'}), {
@@ -178,7 +181,7 @@ serve({
             console.log(`client attempted upgrade to ${addr}`);
             return {};
         },
-        async open(peer: Peer) {
+        async open(peer: any) {
             console.log(`${peer.id.slice(0, 8)} => ${getPeerAddress(peer)}`);
             sendPeer(peer, {
                 sub: "verify",
@@ -214,7 +217,7 @@ serve({
                 address: getPeerAddress(peer)
             }
         },
-        async message(peer: Peer, msg: Buffer) {
+        async message(peer: any, msg: Buffer) {
             let table = groupaddr(peers[peer.id].address)
             let message: any;
             try { message = JSON.parse(msg.toString()) } catch (e) { errors.failedparse(peer); return; }
@@ -233,8 +236,7 @@ serve({
                             let current_messages = (await db
                                 .select()
                                 .from(table)
-                                .orderBy(desc(table.createdAt))
-                                .limit(100))
+                                .orderBy(desc(table.createdAt)))
                                 .map(m => {
                                     if (m.deleted) {
                                         m.content = "[deleted message]";
@@ -342,7 +344,7 @@ serve({
                     break;
             }
         },
-        async close(peer: Peer, event: any) {
+        async close(peer: any, event: any) {
             if (peers[peer.id]) {
                 console.log(`${peer.id.slice(0, 8)} <= ${peers[peer.id].address}`);
                 sendBroadcast(peers[peer.id].address, {

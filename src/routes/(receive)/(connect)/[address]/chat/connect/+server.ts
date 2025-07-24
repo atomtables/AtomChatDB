@@ -136,8 +136,7 @@ export const socket = {
                         let current_messages = (await db
                             .select()
                             .from(table)
-                            .orderBy(desc(table.createdAt))
-                            .limit(100))
+                            .orderBy(desc(table.createdAt)))
                             .map(m => {
                                 if (m.deleted) {
                                     m.content = "[deleted message]";

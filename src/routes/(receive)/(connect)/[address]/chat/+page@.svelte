@@ -300,64 +300,66 @@
                                 </div>
                             {/if}
                         </div>
-                        {#each state.messages as message, ind (message.id)}
-                            {@const sentToday = new Date(message.createdAt).toDateString() === new Date().toDateString()}
-                            {@const sameAuthor = state.messages[ind-1]?.authorId === message.authorId}
-                            {@const diffDays = new Date(message.createdAt).toDateString() !== new Date(state.messages[ind - 1]?.createdAt).toDateString()}
-                            {@const tenMinutes = Math.abs(new Date(message.createdAt) - new Date(state.messages[ind - 1]?.createdAt)) <= 10 * 60 * 1000}
-                            {#if !message.deleted}
-                                {#if (ind > 0 && diffDays) || (ind === 0 && !sentToday)}
-                                    <div class="mt-2  text-center flex items-center space-x-2 px-2 before:content-[''] before:flex-[1] before:border-b-1 before:border-neutral-500 after:content-[''] after:flex-[1] after:border-b-1 after:border-neutral-500">
-                                        {#if sentToday}
-                                            Today
-                                        {:else}
-                                            {new Date(message.createdAt).toLocaleDateString()}
-                                        {/if}
-                                    </div>
-                                {/if}
-                                <div id={message.id} class="target:border-l-2 group relative flex flex-col {!(ind > 0 && sameAuthor && tenMinutes) && 'mt-2 pt-0.5'} px-2 hover:backdrop-blur-3xl">
-                                    {#if !(ind > 0 && sameAuthor && tenMinutes)}
-                                        <div class="flex flex-row items-center space-x-2 pb-1">
-                                            <img src={`/public/dp/${message.username}.jpg`} alt="{message.username}'s avatar" class="w-8 h-8 rounded-full inline-block mr-2">
-                                            <span class="font-bold">{message.username}</span>
+                        {#key state.messages}
+                            {#each state.messages as message, ind (message.id)}
+                                {@const sentToday = new Date(message.createdAt).toDateString() === new Date().toDateString()}
+                                {@const sameAuthor = state.messages[ind-1]?.authorId === message.authorId}
+                                {@const diffDays = new Date(message.createdAt).toDateString() !== new Date(state.messages[ind - 1]?.createdAt).toDateString()}
+                                {@const tenMinutes = Math.abs(new Date(message.createdAt) - new Date(state.messages[ind - 1]?.createdAt)) <= 10 * 60 * 1000}
+                                {#if !message.deleted}
+                                    {#if (ind > 0 && diffDays) || (ind === 0 && !sentToday)}
+                                        <div class="mt-2  text-center flex items-center space-x-2 px-2 before:content-[''] before:flex-[1] before:border-b-1 before:border-neutral-500 after:content-[''] after:flex-[1] after:border-b-1 after:border-neutral-500">
+                                            {#if sentToday}
+                                                Today
+                                            {:else}
+                                                {new Date(message.createdAt).toLocaleDateString()}
+                                            {/if}
                                         </div>
                                     {/if}
-                                    <div class="flex flex-row flex-nowrap items-center">
-                                        <div class="w-16 flex flex-col text-sm text-neutral-300 font-light shrink-0">
-                                            {new Date(message.createdAt).toLocaleTimeString({}, {hour: "2-digit", minute: "2-digit"}).replace(/ (p|a)m/gi, '$1').toLowerCase()}
+                                    <div id={message.id} class="target:border-l-2 group relative flex flex-col {!(ind > 0 && sameAuthor && tenMinutes) && 'mt-2 pt-0.5'} px-2 hover:backdrop-blur-3xl">
+                                        {#if !(ind > 0 && sameAuthor && tenMinutes)}
+                                            <div class="flex flex-row items-center space-x-2 pb-1">
+                                                <img src={`/public/dp/${message.username}.jpg`} alt="{message.username}'s avatar" class="w-8 h-8 rounded-full inline-block mr-2">
+                                                <span class="font-bold">{message.username}</span>
+                                            </div>
+                                        {/if}
+                                        <div class="flex flex-row flex-nowrap items-center">
+                                            <div class="w-16 flex flex-col text-sm text-neutral-300 font-light shrink-0">
+                                                {new Date(message.createdAt).toLocaleTimeString({}, {hour: "2-digit", minute: "2-digit"}).replace(/ (p|a)m/gi, '$1').toLowerCase()}
+                                            </div>
+                                            <div class="">
+                                                <p>{message.content}</p>
+                                                {#if message.image}
+                                                    <img src="/public/images/{message.image}.jpg" alt="Image Message" class="max-w-96 mt-2 mb-2 h-auto rounded-lg">
+                                                {/if}
+                                            </div>
                                         </div>
-                                        <div class="">
-                                            <p>{message.content}</p>
-                                            {#if message.image}
-                                                <img src="/public/images/{message.image}.jpg" alt="Image Message" class="max-w-96 mt-2 mb-2 h-auto rounded-lg">
+                                        {#if message.replyTo}
+                                            {@const reply = messageReferringTo(message.replyTo)}
+                                            {#if reply.deleted}
+                                                <div class="text-neutral-300 text-sm ml-2 truncate">
+                                                    ↪ replied to deleted message
+                                                </div>
+                                            {:else if reply}
+                                                <a class="text-neutral-300 text-sm ml-2 truncate hover:underline w-min" href="#{reply.id}">
+                                                    ↪ replying to <b>{reply.username}</b>: {reply.content.slice(0, 35)}{reply.content.length > 35 ? '...' : ''}
+                                                </a>
+                                            {:else}
+                                                <div class="text-neutral-300 text-sm ml-2 truncate">
+                                                    ↪ replied to a message that has not been loaded
+                                                </div>
+                                            {/if}
+                                        {/if}
+                                        <div class="absolute right-0 top-0 px-2 bg-neutral-700 opacity-50 hover:opacity-100 transition-opacity hidden group-hover:flex flex-row space-x-2">
+                                            <button class="cursor-pointer underline" onclick={() => toSendReply = message}>reply</button>
+                                            {#if message.authorId === data.user.id}
+                                                <button class="cursor-pointer underline text-red-500" onclick={() => deleteMessage(message.id)}>delete</button>
                                             {/if}
                                         </div>
                                     </div>
-                                    {#if message.replyTo}
-                                        {@const reply = messageReferringTo(message.replyTo)}
-                                        {#if reply.deleted}
-                                            <div class="text-neutral-300 text-sm ml-2 truncate">
-                                                ↪ replied to deleted message
-                                            </div>
-                                        {:else if reply}
-                                            <a class="text-neutral-300 text-sm ml-2 truncate hover:underline w-min" href="#{reply.id}">
-                                                ↪ replying to <b>{reply.username}</b>: {reply.content.slice(0, 35)}{reply.content.length > 35 ? '...' : ''}
-                                            </a>
-                                        {:else}
-                                            <div class="text-neutral-300 text-sm ml-2 truncate">
-                                                ↪ replied to a message that has not been loaded
-                                            </div>
-                                        {/if}
-                                    {/if}
-                                    <div class="absolute right-0 top-0 px-2 bg-neutral-700 opacity-50 hover:opacity-100 transition-opacity hidden group-hover:flex flex-row space-x-2">
-                                        <button class="cursor-pointer underline" onclick={() => toSendReply = message}>reply</button>
-                                        {#if message.authorId === data.user.id}
-                                            <button class="cursor-pointer underline text-red-500" onclick={() => deleteMessage(message.id)}>delete</button>
-                                        {/if}
-                                    </div>
-                                </div>
-                            {/if}
-                        {/each}
+                                {/if}
+                            {/each}
+                        {/key}
                         <div class="p-2"></div>
                     </div>
                 </div>
