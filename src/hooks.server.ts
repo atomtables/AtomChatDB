@@ -2,6 +2,8 @@ import * as auth from '$lib/server/auth';
 import * as fs from "node:fs";
 import {db} from "$lib/server/db/index.js";
 import {type RequestEvent} from "@sveltejs/kit";
+import {encodeHexLowerCase} from "@oslojs/encoding";
+import {sha256} from "@oslojs/crypto/sha2";
 
 export const handle = async ({ event, resolve }) => {
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
@@ -22,7 +24,7 @@ export const handle = async ({ event, resolve }) => {
 		users = user
 		if (users.person !== users.person) {
 			// If the IP address has changed, invalidate the session
-			try { await auth.invalidateGuestSession(sessionToken); } catch {}
+			try { await auth.invalidateGuestSession(encodeHexLowerCase(sha256(new TextEncoder().encode(sessionToken)))) } catch {}
 			sessions = null;
 			users = null;
 		}
