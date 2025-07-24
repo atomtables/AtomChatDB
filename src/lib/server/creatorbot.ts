@@ -109,6 +109,7 @@ export default async (group: string) => {
         })
 
     await db.execute(`CREATE TABLE IF NOT EXISTS "address_${address}" (LIKE "group_template" INCLUDING ALL)`);
+    // language=SQL format=false
     await db.execute(`ALTER TABLE "address_${address}" ADD CONSTRAINT "${address}_replyTo_${address}_id_fk" FOREIGN KEY ("replyTo") REFERENCES "public"."address_${address}"("id") ON DELETE no action ON UPDATE no action`)
 
     await db

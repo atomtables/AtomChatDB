@@ -42,15 +42,6 @@ export async function validateSessionToken(token, hashed = false) {
         return { session: null, user: null };
     }
 
-    const renewSession = Date.now() >= session.expiresAt.getTime() - DAY_IN_MS * 15;
-    if (renewSession) {
-        session.expiresAt = new Date(Date.now() + DAY_IN_MS * 30);
-        await db
-            .update(schema.session)
-            .set({ expiresAt: session.expiresAt })
-            .where(eq(schema.session.id, session.id));
-    }
-
     let puser = {
         id: user.id,
         username: user.username,
