@@ -4,7 +4,7 @@ import {db} from "$lib/server/db/index.js";
 import * as schema from "$lib/server/db/schema.js";
 import {desc, eq} from "drizzle-orm";
 import {validateGuestSessionToken, validateSessionToken} from "$lib/server/auth.js";
-import {groupaddr} from "$lib/server/db/index.js";
+import {groupaddr} from "$lib/server/db/schema.js";
 import {getPeers} from "$app/server";
 import * as fs from "node:fs";
 /**

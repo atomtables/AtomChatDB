@@ -1,4 +1,5 @@
-import {db, groupaddr} from "$lib/server/db/index.js";
+import {db} from "$lib/server/db/index.js";
+import {groupaddr} from "$lib/server/db/schema";
 import {eq, sql} from "drizzle-orm";
 import {groups} from "$lib/server/db/schema.js";
 
